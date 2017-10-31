@@ -1,0 +1,73 @@
+{
+ "secret" : "xxx",
+
+ "keyprefix" : "TST",
+
+ "transactions_per_block" : 40,
+
+ "keydb_file" : "keydb.json",
+
+ "snapshot_file" : "snapshot.json",
+
+ "start_time" : "2017-10-30T12:00:00",
+
+ "min_vesting_per_account" : "1.000 TESTS",
+ "total_port_balance" : "200000000.000 TESTS",
+
+ "accounts" :
+ {
+  "initminer" :
+  {
+   "name" : "initminer",
+   "vesting" : "1000.000 TESTS"
+  },
+
+  "init" :
+  {
+   "name" : "init-{index}",
+   "vesting" : "1000.000 TESTS",
+   "count" : 20,
+   "creator" : "initminer"
+  },
+
+  "elector" :
+  {
+   "name" : "elect-{index}",
+   "vesting" : "1000000.000 TESTS",
+   "count" : 10,
+   "round_robin_votes_per_elector" : 2,
+   "random_votes_per_elector" : 3,
+   "randseed" : 1234,
+   "creator" : "initminer"
+  },
+
+  "porter" :
+  {
+   "name" : "porter",
+   "creator" : "initminer",
+   "vesting" : "1000.000 TESTS"
+  },
+
+  "manager" :
+  {
+   "name" : "tnman",
+   "creator" : "initminer",
+   "vesting" : "1000.000 TESTS"
+  },
+
+  "STEEM_MINER_ACCOUNT" :
+  {
+   "name" : "miners"
+  },
+
+  "STEEM_NULL_ACCOUNT" :
+  {
+   "name" : "null"
+  },
+
+  "STEEM_TEMP_ACCOUNT" :
+  {
+   "name" : "temp"
+  }
+ }
+}
