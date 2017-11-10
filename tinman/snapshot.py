@@ -43,7 +43,7 @@ def dump_dgpo(steemd, outfile):
     json.dump( dgpo, outfile, separators=(",", ":"), sort_keys=True )
 
 def main(argv):
-    parser = argparse.ArgumentParser(description="Create snapshot files for Steem")
+    parser = argparse.ArgumentParser(prog=argv[0], description="Create snapshot files for Steem")
     parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL", help="Specify mainnet steemd server")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])

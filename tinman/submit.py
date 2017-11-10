@@ -8,11 +8,14 @@ from binascii import hexlify, unhexlify
 import argparse
 import datetime
 import hashlib
+import itertools
 import json
 import struct
 import subprocess
 import sys
 import traceback
+
+from . import util
 
 class TransactionSigner(object):
     def __init__(self, sign_transaction_exe=None):
@@ -30,7 +33,7 @@ class TransactionSigner(object):
 
 def main(argv):
 
-    parser = argparse.ArgumentParser(description="Submit transactions to Steem")
+    parser = argparse.ArgumentParser(prog=argv[0], description="Submit transactions to Steem")
     parser.add_argument("-t", "--testserver", default="http://127.0.0.1:8190", dest="testserver", metavar="URL", help="Specify testnet steemd server with debug enabled")
     parser.add_argument("--signer", default="sign_transaction", dest="sign_transaction_exe", metavar="FILE", help="Specify path to sign_transaction tool")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")

@@ -7,7 +7,7 @@ setup(name="tinman",
       author           = "Steemit",
       packages         = ["tinman"],
       install_requires = ["steem"],
-      scripts          = ["tinman/snapshot.py",
-                          "tinman/submit.py",
-                          "tinman/txgen.py"])
-
+      entry_points     = {"console_scripts" : [
+                          "tinman=tinman.main:sys_main",
+                         ]}
+    )

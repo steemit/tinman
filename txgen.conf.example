@@ -1,11 +1,5 @@
 {
- "secret" : "xxx",
-
- "keyprefix" : "TST",
-
  "transactions_per_block" : 40,
-
- "keydb_file" : "keydb.json",
 
  "snapshot_file" : "snapshot.json",
 
