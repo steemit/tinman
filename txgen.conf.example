@@ -20,7 +20,7 @@
   {
    "name" : "init-{index}",
    "vesting" : "1000.000 TESTS",
-   "count" : 20,
+   "count" : 21,
    "creator" : "initminer"
   },
 
