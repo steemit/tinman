@@ -61,11 +61,15 @@ def main(argv):
     parser.add_argument("-t", "--testserver", default="http://127.0.0.1:8190", dest="testserver", metavar="URL", help="Specify testnet steemd server with debug enabled")
     parser.add_argument("--signer", default="sign_transaction", dest="sign_transaction_exe", metavar="FILE", help="Specify path to sign_transaction tool")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")
-    parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures")
+    parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
     args = parser.parse_args(argv[1:])
 
+    die_on_fail = False
     if args.fail_file == "-":
         fail_file = sys.stdout
+    elif args.fail_file == "die":
+        fail_file = sys.stdout
+        die_on_fail = True
     else:
         fail_file = open(args.fail_file, "w")
 
@@ -127,6 +131,8 @@ def main(argv):
         except Exception as e:
             fail_file.write(json.dumps([cmd, args, str(e)])+"\n")
             fail_file.flush()
+            if die_on_fail:
+                raise
 
 if __name__ == "__main__":
     main(sys.argv)
