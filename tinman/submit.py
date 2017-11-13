@@ -13,6 +13,7 @@ import json
 import struct
 import subprocess
 import sys
+import time
 import traceback
 
 from . import util
@@ -30,6 +31,29 @@ class TransactionSigner(object):
         self.proc.stdin.flush()
         line = self.proc.stdout.readline()
         return json.loads(line)
+
+class CachedDgpo(object):
+    def __init__(self, timefunc=time.time, refresh_interval=1.0, steemd=None):
+        self.timefunc = timefunc
+        self.refresh_interval = refresh_interval
+        self.steemd = steemd
+
+        self.dgpo = None
+        self.last_refresh = self.timefunc()
+
+        return
+
+    def reset(self):
+        self.dgpo = None
+
+    def get(self):
+        now = self.timefunc()
+        if (now - self.last_refresh) > self.refresh_interval:
+            self.reset()
+        if self.dgpo is None:
+            self.dgpo = self.steemd.database_api.get_dynamic_global_properties(a=None)
+            self.last_refresh = now
+        return self.dgpo
 
 def main(argv):
 
@@ -53,7 +77,7 @@ def main(argv):
     steemd = steem.Steem(nodes=[args.testserver])
     sign_transaction_exe = args.sign_transaction_exe
 
-    dgpo = None
+    cached_dgpo = CachedDgpo(steemd=steemd)
 
     chain_id_name = b"testnet"
     chain_id = hashlib.sha256(chain_id_name).digest()
@@ -63,6 +87,7 @@ def main(argv):
     for line in input_file:
         line = line.strip()
         cmd, args = json.loads(line)
+
         try:
             if cmd == "wait_blocks":
                 steemd.debug_node_api.debug_generate_blocks(
@@ -72,11 +97,10 @@ def main(argv):
                     miss_blocks=args.get("miss_blocks", 0),
                     edit_if_needed=False,
                     )
-                dgpo = None
+                cached_dgpo.reset()
             elif cmd == "submit_transaction":
-                if dgpo is None:
-                    dgpo = steemd.database_api.get_dynamic_global_properties(a=None)
                 tx = args["tx"]
+                dgpo = cached_dgpo.get()
                 tx["ref_block_num"] = dgpo["head_block_number"] & 0xFFFF
                 tx["ref_block_prefix"] = struct.unpack_from("<I", unhexlify(dgpo["head_block_id"]), 4)[0]
                 head_block_time = datetime.datetime.strptime(dgpo["time"], "%Y-%m-%dT%H:%M:%S")
