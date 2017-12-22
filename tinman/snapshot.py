@@ -28,15 +28,44 @@ def list_all_accounts(steemd):
         if not making_progress:
             break
 
-def dump_all_accounts(steemd, outfile):
+def list_all_witnesses(steemd):
+    start = ""
+    last = ""
+    w_owner = "" 
+
+    while True:
+        result = steemd.database_api.list_witnesses(
+           start=start,
+           limit=DATABASE_API_SINGLE_QUERY_LIMIT,
+           order="by_name",
+           )
+        making_progress = False
+        for w in result["witnesses"]:
+            w_owner = w["owner"]
+            if w_owner > last:
+                yield w_owner # Only `owner` member shall be provided
+                last = w_owner
+                making_progress = True
+            start = last
+        if not making_progress:
+            break
+
+# Helper function to reuse code related to collection dump across different usecases
+def dump_collection(c, outfile):
     outfile.write("[\n")
     first = True
-    for a in list_all_accounts(steemd):
+    for o in c:
         if not first:
             outfile.write(",\n")
-        json.dump( a, outfile, separators=(",", ":"), sort_keys=True )
+        json.dump( o, outfile, separators=(",", ":"), sort_keys=True )
         first = False
     outfile.write("\n]")
+
+def dump_all_accounts(steemd, outfile):
+    dump_collection(list_all_accounts(steemd), outfile)
+
+def dump_all_witnesses(steemd, outfile):
+    dump_collection(list_all_witnesses(steemd), outfile)
 
 def dump_dgpo(steemd, outfile):
     dgpo = steemd.database_api.get_dynamic_global_properties(x=None)
@@ -54,11 +83,14 @@ def main(argv):
         outfile = open(args.outfile, "w")
 
     steemd = steem.Steem(nodes=[args.server])
+
     outfile.write("{\n")
     outfile.write('"dynamic_global_properties":')
     dump_dgpo(steemd, outfile)
     outfile.write(',\n"accounts":')
     dump_all_accounts(steemd, outfile)
+    outfile.write(',\n"witnesses":')
+    dump_all_witnesses(steemd, outfile)
     outfile.write("\n}\n")
     outfile.flush()
     if args.outfile != "-":
