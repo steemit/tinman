@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-import steem
-from steembase.account import PrivateKey
-
 from . import util
 
 import argparse
@@ -26,6 +23,7 @@ def process_esc(s, esc="", resolver=None):
     return "".join(result)
 
 def get_key_from_seed(seed):
+    """ Use ECDSA library here. """
     return PrivateKey(hashlib.sha256(seed.encode("ascii")).hexdigest())
 
 class ProceduralKeyResolver(object):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import steem
-from steembase.transactions import SignedTransaction
+from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from binascii import hexlify, unhexlify
 
@@ -78,7 +77,8 @@ def main(argv):
     else:
         input_file = open(args.input_file, "r")
 
-    steemd = steem.Steem(nodes=[args.testserver])
+    backend = SteemRemoteBackend(nodes=[args.testserver], appbase=True)
+    steemd = SteemInterface(backend)
     sign_transaction_exe = args.sign_transaction_exe
 
     cached_dgpo = CachedDgpo(steemd=steemd)

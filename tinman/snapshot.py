@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Module allows to dump snapshot of Main Steem net contents described in the issue:
+https://github.com/steemit/tinman/issues/16
+"""
 
 import argparse
 import json
-import steem
 import sys
+from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 DATABASE_API_SINGLE_QUERY_LIMIT = 1000
 
-from steembase.exceptions import RPCError
-
 def list_all_accounts(steemd):
+    """ Generator function providing set of accounts existing in the Main Steem net """
     start = ""
     last = ""
     while True:
         result = steemd.database_api.list_accounts(
-           start=start,
-           limit=DATABASE_API_SINGLE_QUERY_LIMIT,
-           order="by_name",
-           )
+            start=start,
+            limit=DATABASE_API_SINGLE_QUERY_LIMIT,
+            order="by_name",
+            )
         making_progress = False
         for a in result["accounts"]:
             if a["name"] > last:
@@ -29,16 +33,17 @@ def list_all_accounts(steemd):
             break
 
 def list_all_witnesses(steemd):
+    """ Generator function providing set of witnesses defined in the Main Steem net """
     start = ""
     last = ""
-    w_owner = "" 
+    w_owner = ""
 
     while True:
         result = steemd.database_api.list_witnesses(
-           start=start,
-           limit=DATABASE_API_SINGLE_QUERY_LIMIT,
-           order="by_name",
-           )
+            start=start,
+            limit=DATABASE_API_SINGLE_QUERY_LIMIT,
+            order="by_name",
+            )
         making_progress = False
         for w in result["witnesses"]:
             w_owner = w["owner"]
@@ -52,6 +57,7 @@ def list_all_witnesses(steemd):
 
 # Helper function to reuse code related to collection dump across different usecases
 def dump_collection(c, outfile):
+    """ Allows to dump collection into JSON string. """
     outfile.write("[\n")
     first = True
     for o in c:
@@ -62,16 +68,22 @@ def dump_collection(c, outfile):
     outfile.write("\n]")
 
 def dump_all_accounts(steemd, outfile):
+    """ Allows to dump into the snapshot all accounts provided by Steem Net"""
     dump_collection(list_all_accounts(steemd), outfile)
 
 def dump_all_witnesses(steemd, outfile):
+    """ Allows to dump into the snapshot all witnesses provided by Steem Net"""
     dump_collection(list_all_witnesses(steemd), outfile)
 
 def dump_dgpo(steemd, outfile):
+    """ Allows to dump into the snapshot all Dynamic Global Properties Objects
+        provided by Steem Net
+    """
     dgpo = steemd.database_api.get_dynamic_global_properties(x=None)
     json.dump( dgpo, outfile, separators=(",", ":"), sort_keys=True )
 
 def main(argv):
+    """ Tool entry point function """
     parser = argparse.ArgumentParser(prog=argv[0], description="Create snapshot files for Steem")
     parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL", help="Specify mainnet steemd server")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
@@ -82,7 +94,8 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
-    steemd = steem.Steem(nodes=[args.server])
+    backend = SteemRemoteBackend(nodes=[args.server], appbase=True)
+    steemd = SteemInterface(backend)
 
     outfile.write("{\n")
     outfile.write('"dynamic_global_properties":')
