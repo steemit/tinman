@@ -18,8 +18,11 @@ import traceback
 from . import util
 
 class TransactionSigner(object):
-    def __init__(self, sign_transaction_exe=None):
-        self.proc = subprocess.Popen([sign_transaction_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    def __init__(self, sign_transaction_exe=None, chain_id=None):
+        if(chain_id is None):
+            self.proc = subprocess.Popen([sign_transaction_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        else:
+            self.proc = subprocess.Popen([sign_transaction_exe, "--chain-id="+chain_id], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         return
 
     def sign_transaction(self, tx, wif):
@@ -86,7 +89,7 @@ def main(argv):
     chain_id_name = b"testnet"
     chain_id = hashlib.sha256(chain_id_name).digest()
 
-    signer = TransactionSigner(sign_transaction_exe=args.sign_transaction_exe)
+    signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
 
     for line in input_file:
         line = line.strip()
