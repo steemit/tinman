@@ -2,6 +2,7 @@
 # Utility functions
 
 import itertools
+from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 def tag_escape_sequences(s, esc):
     """
@@ -82,3 +83,32 @@ def find_non_substr(s, alphabet="abcdefghijklmnopqrstuvwxyz", start=""):
         m += 1
 
     return result
+
+def iterate_operations_from(node_server, is_appbase, min_block_number, max_block_number):
+    """ Yields operations iterated from provided node's blocks """
+    assert isinstance(node_server, str)
+    assert isinstance(is_appbase, bool)
+    assert isinstance(min_block_number, int)
+    assert isinstance(max_block_number, int)
+    backend = SteemRemoteBackend(nodes=[node_server], appbase=is_appbase)
+    steemd = SteemInterface(backend)
+    for block_num in range(min_block_number, max_block_number):
+        print("Processing block no "+str(block_num))
+        if is_appbase:
+            another_block = steemd.block_api.get_block(block_num=block_num)
+            if not another_block:
+                print("No block retrieved when requested block no "+str(block_num))
+                return
+            actual_block = another_block["block"]
+            block_transactions = actual_block["transactions"]
+        else:
+            another_block = steemd.block_api.get_block(block_num)
+            if not another_block:
+                print("No block retrieved when requested block no "+str(block_num))
+                return
+            block_transactions = another_block["transactions"]
+        for another_transaction in block_transactions:
+            transaction_operations = another_transaction["operations"]
+            for another_operation in transaction_operations:
+                yield another_operation
+    return
