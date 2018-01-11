@@ -9,6 +9,7 @@ import argparse
 import json
 import sys
 from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
+from tinman.util import dump_collection
 
 DATABASE_API_SINGLE_QUERY_LIMIT = 1000
 
@@ -54,18 +55,6 @@ def list_all_witnesses(steemd):
             start = last
         if not making_progress:
             break
-
-# Helper function to reuse code related to collection dump across different usecases
-def dump_collection(c, outfile):
-    """ Allows to dump collection into JSON string. """
-    outfile.write("[\n")
-    first = True
-    for o in c:
-        if not first:
-            outfile.write(",\n")
-        json.dump( o, outfile, separators=(",", ":"), sort_keys=True )
-        first = False
-    outfile.write("\n]")
 
 def dump_all_accounts(steemd, outfile):
     """ Allows to dump into the snapshot all accounts provided by Steem Net"""

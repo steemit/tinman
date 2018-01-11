@@ -2,6 +2,8 @@
 # Utility functions
 
 import itertools
+import json
+
 from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 def tag_escape_sequences(s, esc):
@@ -84,7 +86,19 @@ def find_non_substr(s, alphabet="abcdefghijklmnopqrstuvwxyz", start=""):
 
     return result
 
-def iterate_operations_from(node_server, is_appbase, min_block_number, max_block_number, searched_operation_names):
+# Helper function to reuse code related to collection dump across different usecases
+def dump_collection(c, outfile):
+    """ Allows to dump collection into JSON string. """
+    outfile.write("[\n")
+    first = True
+    for o in c:
+        if not first:
+            outfile.write(",\n")
+        json.dump( o, outfile, separators=(",", ":"), sort_keys=True )
+        first = False
+    outfile.write("\n]")
+
+def iterate_operations_from(steemd, is_appbase, min_block_number, max_block_number, searched_operation_names):
     """
     Yields operations iterated from provided node's blocks.
     If the last argument is not empty only those operations are returned
@@ -92,17 +106,15 @@ def iterate_operations_from(node_server, is_appbase, min_block_number, max_block
 
     Example usage:
 
-    >>> iterate_operations_from("http://127.0.0.1:8090", True, 1102, 1103, set())
+    >>> iterate_operations_from(steemd, True, 1102, 1103, set())
     ['pow', OrderedDict([('worker_account', 'steemit11'), ('block_id', '0000044df0f062c0504a8e37288a371ada63a1c7'), ('nonce', 33097), ('work', OrderedDict([('worker', 'STM65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G'), ('input', '45a3824498b87e41129f6fef17be276af6ff87d1e859128f28aaa9c08208871d'), ('signature', '1f93a52c4f794803b2563845b05b485e3e5f4c075ddac8ea8cffb988a1ffcdd1055590a3d5206a3be83cab1ea548fc52889d43bdbd7b74d62f87fb8e2166145a5d'), ('work', '00003e554a58830e7e01669796f40d1ce85c7eb979e376cb49e83319c2688c7e')])), ('props', OrderedDict([('account_creation_fee', '100.000 STEEM'), ('maximum_block_size', 131072), ('sbd_interest_rate', 1000)]))])]
     """
-    assert isinstance(node_server, str)
+    assert isinstance(steemd, SteemInterface)
     assert isinstance(is_appbase, bool)
     assert isinstance(min_block_number, int)
     assert isinstance(max_block_number, int)
     assert isinstance(searched_operation_names, set)
     filter_operation = len(searched_operation_names) > 0
-    backend = SteemRemoteBackend(nodes=[node_server], appbase=is_appbase)
-    steemd = SteemInterface(backend)
     for block_num in range(min_block_number, max_block_number):
         if is_appbase:
             another_block = steemd.block_api.get_block(block_num=block_num)
@@ -123,3 +135,13 @@ def iterate_operations_from(node_server, is_appbase, min_block_number, max_block
                 if not filter_operation or another_operation[0] in searched_operation_names:
                     yield another_operation
     return
+
+def dump_operations(steemd, is_appbase, min_block_number, max_block_number, outfile):
+    """ Allows to dump into the file operations retrieved and filtered out from provided steemd"""
+    assert isinstance(steemd, SteemInterface)
+    assert isinstance(is_appbase, bool)
+    assert isinstance(min_block_number, int)
+    assert isinstance(max_block_number, int)
+    # Only the operations matching the name set below will be iterated. See https://github.com/steemit/tinman/issues/18
+    searched_operations = set(['feed_publish', 'comment', 'vote', 'custom_json', 'delete_comment', 'comment_options'])
+    dump_collection(iterate_operations_from(steemd, is_appbase, min_block_number, max_block_number, searched_operations), outfile)
