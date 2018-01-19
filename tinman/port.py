@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+import time
 
 from . import prockey
 from . import util
@@ -14,29 +15,37 @@ def str2bool(str_arg):
     """
     return True if str_arg.lower() == 'true' else (False if str_arg.lower() == 'false' else None)
 
-def aquire_operations(conf, keydb):
+def repack_operations(conf, keydb):
     """
     Uses configuration file data to acquire operations from source node
-    blocks/transactions and yields them one by one.
+    blocks/transactions and repack them in new transactions one to one.
     """
     source_node = conf["transaction_source"]["node"]
     is_appbase = str2bool(conf["transaction_source"]["appbase"])
     backend = simple_steem_client.simple_steem_client.client.SteemRemoteBackend(nodes=[source_node], appbase=is_appbase)
     steemd = simple_steem_client.simple_steem_client.client.SteemInterface(backend)
     min_block = int(conf["min_block_number"])
-    max_block = int(conf["max_block_number"])
     ported_operations = set(conf["ported_operations"])
     tx_signer = conf["transaction_signer"]
-    for op in util.iterate_operations_from(steemd, is_appbase, min_block, max_block, ported_operations):
-        yield {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer)]}
+    old_head_block = min_block
+    while True:
+        dgpo = steemd.database_api.get_dynamic_global_properties()
+        new_head_block = dgpo["head_block_number"]
+        while old_head_block == new_head_block:
+            time.sleep(1) # Theoretically 3 seconds, but most probably we won't have to wait that long.
+            dgpo = steemd.database_api.get_dynamic_global_properties()
+            new_head_block = dgpo["head_block_number"]
+        for op in util.iterate_operations_from(steemd, is_appbase, old_head_block, new_head_block, ported_operations):
+            yield {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer)]}
+        old_head_block = new_head_block
     return
 
-def repack_operations(conf):
+def build_actions(conf):
     """
-    Packs transactions acquired from source node into blocks of configured size.
+    Packs transactions rebuilt with operations acquired from source node into blocks of configured size.
     """
     keydb = prockey.ProceduralKeyDatabase()
-    for b in util.batch(aquire_operations(conf, keydb), conf["transactions_per_block"]):
+    for b in util.batch(repack_operations(conf, keydb), conf["transactions_per_block"]):
         yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
@@ -57,7 +66,7 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
-    for action in repack_operations(conf):
+    for action in build_actions(conf):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
