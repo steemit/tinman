@@ -1,0 +1,24 @@
+{
+ "transactions_per_block" : 40,
+
+ "transaction_signer" : "porter",
+
+ "transaction_source" :
+ {
+  "node" : "http://blocktrades.syncad.com:8000/steem-witness/",
+  "appbase" : "False"
+ },
+
+ "min_block_number" : "1000922",
+ "max_block_number" : "1000923",
+
+ "ported_operations" :
+ [
+  "feed_publish",
+  "comment",
+  "vote",
+  "custom_json",
+  "delete_comment",
+  "comment_options"
+ ]
+}
