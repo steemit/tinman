@@ -4,6 +4,7 @@
 import itertools
 import json
 
+from . import prockey
 from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 def tag_escape_sequences(s, esc):
@@ -86,18 +87,6 @@ def find_non_substr(s, alphabet="abcdefghijklmnopqrstuvwxyz", start=""):
 
     return result
 
-# Helper function to reuse code related to collection dump across different usecases
-def dump_collection(c, outfile):
-    """ Allows to dump collection into JSON string. """
-    outfile.write("[\n")
-    first = True
-    for o in c:
-        if not first:
-            outfile.write(",\n")
-        json.dump( o, outfile, separators=(",", ":"), sort_keys=True )
-        first = False
-    outfile.write("\n]")
-
 def iterate_operations_from(steemd, is_appbase, min_block_number, max_block_number, searched_operation_names):
     """
     Yields operations iterated from provided node's blocks.
@@ -136,12 +125,12 @@ def iterate_operations_from(steemd, is_appbase, min_block_number, max_block_numb
                     yield another_operation
     return
 
-def dump_operations(steemd, is_appbase, min_block_number, max_block_number, outfile):
-    """ Allows to dump into the file operations retrieved and filtered out from provided steemd"""
-    assert isinstance(steemd, SteemInterface)
-    assert isinstance(is_appbase, bool)
-    assert isinstance(min_block_number, int)
-    assert isinstance(max_block_number, int)
-    # Only the operations matching the name set below will be iterated. See https://github.com/steemit/tinman/issues/18
-    searched_operations = set(['feed_publish', 'comment', 'vote', 'custom_json', 'delete_comment', 'comment_options'])
-    dump_collection(iterate_operations_from(steemd, is_appbase, min_block_number, max_block_number, searched_operations), outfile)
+def action_to_str(action):
+    """
+    This serializes actions, picking a string that does not occur in the JSON
+    serialization to escape public/private key notes.
+    """
+    json_empty_esc = json.dumps(action, separators=(",", ":"), default=prockey.PubkeySerializer(esc=""), sort_keys=True)
+    esc = find_non_substr(json_empty_esc, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    action[1]["esc"] = esc
+    return json.dumps(action, separators=(",", ":"), default=prockey.PubkeySerializer(esc=esc), sort_keys=True)

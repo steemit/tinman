@@ -260,16 +260,6 @@ def build_actions(conf):
 
     return
 
-def action_to_str(action):
-    """
-    This serializes actions, picking a string that does not occur in the JSON
-    serialization to escape public/private key notes.
-    """
-    json_empty_esc = json.dumps(action, separators=(",", ":"), default=prockey.PubkeySerializer(esc=""), sort_keys=True)
-    esc = util.find_non_substr(json_empty_esc, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    action[1]["esc"] = esc
-    return json.dumps(action, separators=(",", ":"), default=prockey.PubkeySerializer(esc=esc), sort_keys=True)
-
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="", dest="conffile", metavar="FILE", help="Specify configuration file")
@@ -285,7 +275,7 @@ def main(argv):
         outfile = open(args.outfile, "w")
 
     for action in build_actions(conf):
-        outfile.write(action_to_str(action))
+        outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
     outfile.flush()
