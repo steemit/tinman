@@ -9,8 +9,8 @@
   "appbase" : "False"
  },
 
- "min_block_number" : "1000922",
- "max_block_number" : "1000923",
+ "min_block_number" : "19199903",
+ "max_block_number" : "0",
 
  "ported_operations" :
  [

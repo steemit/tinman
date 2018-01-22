@@ -25,8 +25,18 @@ def repack_operations(conf, keydb):
     backend = simple_steem_client.simple_steem_client.client.SteemRemoteBackend(nodes=[source_node], appbase=is_appbase)
     steemd = simple_steem_client.simple_steem_client.client.SteemInterface(backend)
     min_block = int(conf["min_block_number"])
+    max_block = int(conf["max_block_number"])
     ported_operations = set(conf["ported_operations"])
     tx_signer = conf["transaction_signer"]
+    """ Positive value of max_block means get from [min_block_number,max_block_number) range and stop """
+    if max_block > 0: 
+        for op in util.iterate_operations_from(steemd, is_appbase, min_block, max_block, ported_operations):
+            yield {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer)]}
+        return
+    """
+    Otherwise get blocks from min_block_number to current head and again
+    until you have to wait for another block to be produced (chase-then-listen mode)
+    """
     old_head_block = min_block
     while True:
         dgpo = steemd.database_api.get_dynamic_global_properties()
