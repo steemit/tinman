@@ -6,7 +6,7 @@ setup(name="tinman",
       url              = "https://github.com/steemit/tinman",
       author           = "Steemit",
       packages         = ["tinman"],
-      install_requires = ["steem"],
+      install_requires = [],
       entry_points     = {"console_scripts" : [
                           "tinman=tinman.main:sys_main",
                          ]}
