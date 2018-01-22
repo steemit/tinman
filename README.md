@@ -16,29 +16,6 @@ This repository contains utilities to create a testnet.
 
 # Installation
 
-The installation process for `tinman` is complicated and finicky because the
-Python packaging of `steem-python` is
-[complicated and finicky](https://github.com/steemit/steem-python/issues/96).
-
-## Compiling Python
-
-The Python which comes with Ubuntu 16.04 is too old.  So we must download,
-build and install a newer version from `python.org`:
-
-```
-sudo apt-get install build-essential libbz2-dev libssl-dev libreadline-dev libsqlite3-dev tk-dev wget xz-utils
-wget https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tar.xz
-cat >> Python-3.6.3.tar.xz.sha256sum <<EOF
-cda7d967c9a4bfa52337cdf551bcc5cff026b6ac50a8834e568ce4a794ca81da *Python-3.6.3.tar.xz
-EOF
-sha256sum -c Python-3.6.3.tar.xz.sha256sum
-xz -cd Python-3.6.3.tar.xz | tar x
-cd Python-3.6.3
-./configure "--prefix=$HOME/opt/python-3.6.3"
-make -j$(nproc)
-make install
-```
-
 ## Creating a virtualenv
 
 In this step we create a virtualenv to isolate our project from the
@@ -47,23 +24,12 @@ modifying the `PATH` and the prompt of the current shell,
 by sourcing the `activate` script:
 
 ```
-sudo apt-get install virtualenv
-virtualenv -p "$HOME/opt/python-3.6.3/bin/python3.6" ~/ve/tinman
+sudo apt-get install virtualenv python3
+virtualenv -p $(which python3) ~/ve/tinman
 source ~/ve/tinman/bin/activate
 ```
 
-Then we can install `python-steem` using the `pip` within the
-active virtualenv (i.e., in a shell where the `~/ve/tinman/bin/activate`
-script has been sourced).  We need unmerged changes in the
-`theoretical-testnet` branch of the git repo, so use the following
-command:
-
-```
-# Execute inside tinman virtualenv
-pip install git+https://github.com/steemit/steem-python.git@theoretical-testnet
-```
-
-## Checking out the tinman source
+## Using tinman
 
 The `tinman` source can be checked out with `git`.  This documentation
 assumes the source code lives in `~/src/tinman`:
@@ -71,52 +37,21 @@ assumes the source code lives in `~/src/tinman`:
 ```
 mkdir -p ~/src
 cd ~/src
-git clone https://github.com/steemit/tinman
+git clone git@github.com:steemit/tinman
+pip install ./tinman
 ```
 
 If everything is set up correctly, you should be able to run commands
-such as `tinman help` as follows:
+such as `tinman --help` as follows:
 
 ```
 # Execute inside tinman virtualenv
-cd ~/src/tinman
-python -m tinman help
+tinman --help
 ```
 
-## Setting up tinman script
-
-It is inconvenient to always change to the `tinman` directory
-and invoke `python -m tinman` manually.  So these commands will
-set up a shell script shortcut called `tinman`:
-
-```
-mkdir -p ~/bin
-cat >~/bin/tinman <<'EOF'
-#!/bin/sh
-exec env PYTHONPATH="$HOME/src/tinman" "$HOME/ve/tinman/bin/python" -m tinman "$@"
-EOF
-chmod a+x ~/bin/tinman
-```
-
-You will also have to add `$HOME/bin` to your `PATH` to your shell startup
-script if it is not already there.  (It is present in the
-default shell startup scripts on Ubuntu 16.04.)
-
-If it is all set up correctly, you should be able to execute the following
-commands and see the help for the `tinman snapshot` command, even if the
-virtualenv is not active:
-
-```
-#
-# Execute inside or outside tinman virtualenv
-#
-
-cd ~
-tinman snapshot --help
-```
-
-(Hint:  If you are inside a virtualenv, you may type `deactivate`
-to exit the virtualenv without exiting the shell.)
+Note, the `tinman` script in `~/ve/tinman/bin/tinman` may be symlinked
+elsewhere (for example, `ln -s ~/ve/tinman/bin/tinman ~/bin/tinman`)
+to allow `tinman` to run without the `virtualenv` being active.
 
 # Example usage
 
