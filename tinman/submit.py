@@ -31,7 +31,7 @@ class TransactionSigner(object):
         self.proc.stdin.write(json_data_bytes)
         self.proc.stdin.write(b"\n")
         self.proc.stdin.flush()
-        line = self.proc.stdout.readline()
+        line = self.proc.stdout.readline().decode("utf-8")
         return json.loads(line)
 
 class CachedDgpo(object):
