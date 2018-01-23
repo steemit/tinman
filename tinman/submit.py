@@ -64,6 +64,7 @@ def main(argv):
     parser.add_argument("--signer", default="sign_transaction", dest="sign_transaction_exe", metavar="FILE", help="Specify path to sign_transaction tool")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")
     parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
+    parser.add_argument("-c", "--chain-id", default="", dest="chain_id", metavar="CID", help="Specify chain ID")
     args = parser.parse_args(argv[1:])
 
     die_on_fail = False
@@ -86,8 +87,10 @@ def main(argv):
 
     cached_dgpo = CachedDgpo(steemd=steemd)
 
-    chain_id_name = b"testnet"
-    chain_id = hashlib.sha256(chain_id_name).digest()
+    if args.chain_id != "":
+        chain_id = hashlib.sha256(args.chain_id).digest()
+    else:
+        chain_id = None
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
 
