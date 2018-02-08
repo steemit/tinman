@@ -3,23 +3,23 @@
 
  "snapshot_file" : "snapshot.json",
 
- "start_time" : "2017-10-30T12:00:00",
+ "start_time" : "2018-01-24T12:00:00",
 
- "min_vesting_per_account" : "1.000 TESTS",
- "total_port_balance" : "200000000.000 TESTS",
+ "min_vesting_per_account" : ["1", 3, "@@000000021"],
+ "total_port_balance" : ["200000000000", 3, "@@000000021"],
 
  "accounts" :
  {
   "initminer" :
   {
    "name" : "initminer",
-   "vesting" : "1000.000 TESTS"
+   "vesting" : ["1000000", 3, "@@000000021"]
   },
 
   "init" :
   {
    "name" : "init-{index}",
-   "vesting" : "1000.000 TESTS",
+   "vesting" : ["1000000", 3, "@@000000021"],
    "count" : 21,
    "creator" : "initminer"
   },
@@ -27,7 +27,7 @@
   "elector" :
   {
    "name" : "elect-{index}",
-   "vesting" : "1000000.000 TESTS",
+   "vesting" : ["1000000000", 3, "@@000000021"],
    "count" : 10,
    "round_robin_votes_per_elector" : 2,
    "random_votes_per_elector" : 3,
@@ -39,14 +39,14 @@
   {
    "name" : "porter",
    "creator" : "initminer",
-   "vesting" : "1000.000 TESTS"
+   "vesting" : ["1000000", 3, "@@000000021"]
   },
 
   "manager" :
   {
    "name" : "tnman",
    "creator" : "initminer",
-   "vesting" : "1000.000 TESTS"
+   "vesting" : ["1000000", 3, "@@000000021"]
   },
 
   "STEEM_MINER_ACCOUNT" :
