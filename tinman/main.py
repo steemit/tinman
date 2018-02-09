@@ -7,6 +7,7 @@ from . import snapshot
 from . import txgen
 from . import port
 from . import keysub
+from . import sample
 from . import submit
 
 class Help(object):
@@ -24,6 +25,7 @@ commands = collections.OrderedDict((
             ("txgen"   , txgen   ),
             ("port"    , port    ),
             ("keysub"  , keysub  ),
+            ("sample"  , sample  ),
             ("submit"  , submit  ),
             ("help"    , Help    ),
            ))
