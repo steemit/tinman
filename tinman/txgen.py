@@ -71,7 +71,7 @@ def update_witnesses(conf, keydb, name):
             "url" : "https://steemit.com/",
             "block_signing_key" : keydb.get_pubkey(name, "block"),
             "props" : {},
-            "fee" : "0.000 TESTS",
+            "fee" : amount(0),
            }]],
            "wif_sigs" : [keydb.get_privkey(name)]}
     return
@@ -110,12 +110,10 @@ def build_initminer_tx(conf, keydb):
     "wif_sigs" : ["5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]}
 
 def satoshis(s):
-    return int(s.split()[0].replace(".", ""))
+    return int(s[0])
 
-def amount(satoshis, asset="TESTS", prec=3):
-    denom = 10**prec
-    q, r = satoshis // denom, satoshis % denom
-    return ("{}.{:0"+str(prec)+"} {}").format(q, r, asset)
+def amount(satoshis, prec=3, symbol="@@000000021"):
+    return [str(satoshis), prec, symbol]
 
 def get_system_account_names(conf):
     for desc in conf["accounts"].values():
