@@ -65,6 +65,7 @@ def main(argv):
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")
     parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
     parser.add_argument("-c", "--chain-id", default="", dest="chain_id", metavar="CID", help="Specify chain ID")
+    parser.add_argument("--timeout", default=5.0, type=float, dest="timeout", metavar="SECONDS", help="API timeout")
     args = parser.parse_args(argv[1:])
 
     die_on_fail = False
@@ -81,7 +82,9 @@ def main(argv):
     else:
         input_file = open(args.input_file, "r")
 
-    backend = SteemRemoteBackend(nodes=[args.testserver], appbase=True)
+    timeout = args.timeout
+
+    backend = SteemRemoteBackend(nodes=[args.testserver], appbase=True, min_timeout=timeout, max_timeout=timeout)
     steemd = SteemInterface(backend)
     sign_transaction_exe = args.sign_transaction_exe
 
