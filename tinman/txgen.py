@@ -69,7 +69,7 @@ def update_witnesses(conf, keydb, name):
         yield {"operations" : [["witness_update",{
             "owner" : name,
             "url" : "https://steemit.com/",
-            "block_signing_key" : keydb.get_pubkey(name, "block"),
+            "block_signing_key" : "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
             "props" : {},
             "fee" : amount(0),
            }]],
