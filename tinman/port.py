@@ -4,10 +4,10 @@ import argparse
 import json
 import sys
 import time
+import simple_steem_client
 
 from . import prockey
 from . import util
-from . import simple_steem_client
 
 def str2bool(str_arg):
     """
