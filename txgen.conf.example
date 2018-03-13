@@ -3,7 +3,7 @@
 
  "snapshot_file" : "snapshot.json",
 
- "start_time" : "2018-01-24T12:00:00",
+ "start_time" : "2017-10-24T12:00:00",
 
  "min_vesting_per_account" : ["1", 3, "@@000000021"],
  "total_port_balance" : ["200000000000", 3, "@@000000021"],
