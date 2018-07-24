@@ -113,7 +113,7 @@ def satoshis(s):
     return int(s["amount"])
 
 def amount(satoshis, prec=3, symbol="@@000000021"):
-    return {"amount" : str(satoshis), "precision" : prec, "nia" : symbol}
+    return {"amount" : str(satoshis), "precision" : prec, "nai" : symbol}
 
 def get_system_account_names(conf):
     for desc in conf["accounts"].values():
