@@ -110,10 +110,10 @@ def build_initminer_tx(conf, keydb):
     "wif_sigs" : ["5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]}
 
 def satoshis(s):
-    return int(s[0])
+    return int(s["amount"])
 
 def amount(satoshis, prec=3, symbol="@@000000021"):
-    return [str(satoshis), prec, symbol]
+    return {"amount" : str(satoshis), "precision" : prec, "nia" : symbol}
 
 def get_system_account_names(conf):
     for desc in conf["accounts"].values():
