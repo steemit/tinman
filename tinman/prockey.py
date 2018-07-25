@@ -53,10 +53,10 @@ class PubkeySerializer(object):
     date.  I.e. we generate an object of a format roughly
     like this:
 
-    {"tx" : {"operations" : [["account_create",{
+    {"tx" : {"operations" : [{"type" : "account_create_operation", "value" : {
       "creator" : "alice",
       "new_account_name" : "bob",
-      "memo_key" : "bob-memo", ...}]]},
+      "memo_key" : "bob-memo", ...}}]},
      "signers" : ["alice-active"],
      "pubkeysubs" : ["bob-memo"]
     }

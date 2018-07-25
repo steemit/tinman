@@ -19,7 +19,7 @@ def create_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
     for index in range(desc.get("count", 1)):
         name = desc["name"].format(index=index)
-        yield {"operations" : [["account_create",{
+        yield {"operations" : [{"type" : "account_create_operation", "value" : {
             "fee" : desc["vesting"],
             "creator" : desc["creator"],
             "new_account_name" : name,
@@ -28,7 +28,7 @@ def create_accounts(conf, keydb, name):
             "posting" : keydb.get_authority(name, "posting"),
             "memo_key" : keydb.get_pubkey(name, "memo"),
             "json_metadata" : "",
-           }]],
+           }}],
            "wif_sigs" : [keydb.get_privkey(desc["creator"])]}
     return
 
@@ -54,11 +54,11 @@ def vote_accounts(conf, keydb, elector, elected):
         er_name = er_desc["name"].format(index=er_index)
         for ed_index in votes:
            ed_name = ed_desc["name"].format(index=ed_index)
-           ops.append(["account_witness_vote", {
+           ops.append({"type" : "account_witness_vote_operation", "value" : {
             "account" : er_name,
             "witness" : ed_name,
             "approve" : True,
-            }])
+            }})
         yield {"operations" : ops, "wif_sigs" : [keydb.get_privkey(er_name)]}
     return
 
@@ -66,13 +66,13 @@ def update_witnesses(conf, keydb, name):
     desc = conf["accounts"][name]
     for index in range(desc["count"]):
         name = desc["name"].format(index=index)
-        yield {"operations" : [["witness_update",{
+        yield {"operations" : [{"type" : "witness_update_operation", "value" : {
             "owner" : name,
             "url" : "https://steemit.com/",
             "block_signing_key" : "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
             "props" : {},
             "fee" : amount(0),
-           }]],
+           }}],
            "wif_sigs" : [keydb.get_privkey(name)]}
     return
 
@@ -85,35 +85,35 @@ def build_setup_transactions(conf, keydb):
 
 def build_initminer_tx(conf, keydb):
     return {"operations" : [
-     ["account_update",
-      {
+     {"type" : "account_update_operation",
+      "value" : {
        "account" : "initminer",
        "owner" : keydb.get_authority("initminer", "owner"),
        "active" : keydb.get_authority("initminer", "active"),
        "posting" : keydb.get_authority("initminer", "posting"),
        "memo_key" : keydb.get_pubkey("initminer", "memo"),
        "json_metadata" : "",
-      }],
-     ["transfer_to_vesting",
-      {
+      }},
+     {"type" : "transfer_to_vesting_operation",
+      "value" : {
        "from" : "initminer",
        "to" : "initminer",
        "amount" : conf["accounts"]["initminer"]["vesting"],
-      }],
-     ["account_witness_vote",
-      {
+      }},
+     {"type" : "account_witness_vote_operation",
+      "value" : {
        "account" : "initminer",
        "witness" : "initminer",
        "approve" : True,
-      }],
+      }},
     ],
     "wif_sigs" : ["5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]}
 
 def satoshis(s):
-    return int(s[0])
+    return int(s["amount"])
 
 def amount(satoshis, prec=3, symbol="@@000000021"):
-    return [str(satoshis), prec, symbol]
+    return {"amount" : str(satoshis), "precision" : prec, "nai" : symbol}
 
 def get_system_account_names(conf):
     for desc in conf["accounts"].values():
@@ -172,12 +172,12 @@ def port_snapshot(conf, keydb):
     porter = conf["accounts"]["porter"]["name"]
 
     yield {"operations" : [
-      ["transfer",
-      {"from" : "initminer",
+      {"type" : "transfer_operation",
+      "value" : {"from" : "initminer",
        "to" : porter,
        "amount" : conf["total_port_balance"],
        "memo" : "Fund porting balances",
-      }]],
+      }}],
        "wif_sigs" : [keydb.get_privkey("initminer")]}
 
     porter_wif = keydb.get_privkey("porter")
@@ -190,7 +190,7 @@ def port_snapshot(conf, keydb):
         name = a["name"]
         tnman = conf["accounts"]["manager"]["name"]
 
-        ops = [["account_create",{
+        ops = [{"type" : "account_create_operation", "value" : {
           "fee" : amount(max(vesting_amount, min_vesting_per_account)),
           "creator" : porter,
           "new_account_name" : name,
@@ -199,14 +199,14 @@ def port_snapshot(conf, keydb):
           "posting" : create_auth,
           "memo_key" : "TST"+a["memo_key"][3:],
           "json_metadata" : "",
-         }]]
+         }}]
         if transfer_amount > 0:
-            ops.append(["transfer",{
+            ops.append({"type" : "transfer_operation", "value" : {
              "from" : porter,
              "to" : name,
              "amount" : amount(transfer_amount),
              "memo" : "Ported balance",
-             }])
+             }})
 
         yield {"operations" : ops, "wif_sigs" : [porter_wif]}
 
@@ -222,14 +222,14 @@ def port_snapshot(conf, keydb):
         # substitute prefix for key_auths
         cur_auth["key_auths"] = [["TST"+k[3:], w] for k, w in cur_auth["key_auths"]]
 
-        ops = [["account_update",{
+        ops = [{"type" : "account_update_operation", "value" : {
           "account" : a["name"],
           "owner" : cur_auth,
           "active" : cur_auth,
           "posting" : cur_auth,
           "memo_key" : "TST"+a["memo_key"][3:],
           "json_metadata" : a["json_metadata"],
-          }]]
+          }}]
 
         yield {"operations" : ops, "wif_sigs" : [porter_wif]}
 
