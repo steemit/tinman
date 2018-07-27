@@ -38,7 +38,9 @@ assumes the source code lives in `~/src/tinman`:
 mkdir -p ~/src
 cd ~/src
 git clone git@github.com:steemit/tinman
-pip install ./tinman
+cd tinman
+git submodule update --init --recursive
+pip install .
 ```
 
 If everything is set up correctly, you should be able to run commands
