@@ -169,6 +169,37 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
+# Gatling transactions from mainnet
+
+To stream from the last irreversible block:
+
+```bash
+tinman gatling -s https://api.steemit.com -o -
+```
+
+To stream from a particular block:
+
+```bash
+tinman gatling -s https://api.steemit.com -f 25042127 -o -
+```
+
+To stream from a particular block, to a particular block:
+
+```bash
+tinman gatling -s https://api.steemit.com -f 25042127 -t 25042177 -o -
+```
+
+Bring it all together via one pipeline to testnet:
+
+```bash
+( \
+  echo '["set_secret", {"secret":"xyz-"}]' ; \
+  tinman gatling -s https://api.steemit.com -o - \
+) | \
+tinman keysub | \
+tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
+```
+
 # Running testnet witness node(s)
 
 At the end of the transactions to be submitted, `tinman txgen` creates witnesses `init-0` through `init-20`
