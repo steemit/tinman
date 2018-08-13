@@ -8,7 +8,7 @@ https://github.com/steemit/tinman/issues/16
 import argparse
 import json
 import sys
-from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 DATABASE_API_SINGLE_QUERY_LIMIT = 1000
 

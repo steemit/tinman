@@ -4,7 +4,7 @@ import argparse
 import datetime
 import json
 import sys
-from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from . import prockey
 from . import util
