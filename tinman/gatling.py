@@ -4,6 +4,7 @@ import argparse
 import datetime
 import json
 import sys
+from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from . import prockey
 from . import util
@@ -11,33 +12,35 @@ from . import util
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
 
-def stream_actions(conf):
+def stream_actions(steemd, from_block_num, to_block_num):
     keydb = prockey.ProceduralKeyDatabase()
 
-    start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
-    miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
-    miss_blocks = max(miss_blocks-1, 0)
 
-    # stream here
+    for block_num in range(from_block_num, to_block_num):
+      block = steemd.block_api.get_block(block_num=block_num)
+      for tx in block['block']['transactions']:
+          yield ["submit_transaction", {"tx" : tx}]
 
     return
 
 def main(argv):
-    parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
-    parser.add_argument("-c", "--conffile", default="", dest="conffile", metavar="FILE", help="Specify configuration file")
+    parser = argparse.ArgumentParser(prog=argv[0], description="Stream actions for Steem testnet")
+    parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL", help="Specify mainnet steemd server")
+    parser.add_argument("-f", "--from_block", default=1, dest="from_block_num", metavar="integer", help="Stream from block_num")
+    parser.add_argument("-t", "--to_block", default=-1, dest="to_block_num", metavar="integer", help="Stream to block_num")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
-
-    with open(args.conffile, "r") as f:
-        conf = json.load(f)
 
     if args.outfile == "-":
         outfile = sys.stdout
     else:
         outfile = open(args.outfile, "w")
 
-    for action in stream_actions(conf):
+    backend = SteemRemoteBackend(nodes=[args.server], appbase=True)
+    steemd = SteemInterface(backend)
+
+    for action in stream_actions(steemd, int(args.from_block_num), int(args.to_block_num)):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
