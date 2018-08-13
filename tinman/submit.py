@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from binascii import hexlify, unhexlify
 

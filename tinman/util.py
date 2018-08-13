@@ -5,7 +5,7 @@ import itertools
 import json
 
 from . import prockey
-from tinman.simple_steem_client.simple_steem_client.client import SteemRemoteBackend, SteemInterface
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 def tag_escape_sequences(s, esc):
     """
