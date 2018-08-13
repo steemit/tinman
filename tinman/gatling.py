@@ -20,6 +20,10 @@ def stream_actions(steemd, from_block_num, to_block_num):
     for block_num in range(from_block_num, to_block_num):
       block = steemd.block_api.get_block(block_num=block_num)
       for tx in block['block']['transactions']:
+          tx['ref_block_num'] = None
+          tx['ref_block_prefix'] = None
+          tx['expiration'] = None
+          tx['signatures'] = []
           yield ["submit_transaction", {"tx" : tx}]
 
     return
