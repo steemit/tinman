@@ -13,9 +13,10 @@ from . import util
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
 
-def stream_actions(steemd, from_block_num, to_block_num):
+def stream_actions(server, tx_signer, from_block_num, to_block_num):
+    backend = SteemRemoteBackend(nodes=[server], appbase=True)
+    steemd = SteemInterface(backend)
     keydb = prockey.ProceduralKeyDatabase()
-    genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
     
     if from_block_num == -1:
       dgpo = steemd.database_api.get_dynamic_global_properties()
@@ -39,6 +40,7 @@ def stream_actions(steemd, from_block_num, to_block_num):
               tx['ref_block_prefix'] = None
               tx['expiration'] = None
               tx['signatures'] = []
+              tx['wif_sigs'] = [keydb.get_privkey(tx_signer)]
               yield ["submit_transaction", {"tx" : tx}]
         
         if stream:
@@ -50,8 +52,9 @@ def stream_actions(steemd, from_block_num, to_block_num):
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Stream actions for Steem testnet")
     parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL", help="Specify mainnet steemd server")
-    parser.add_argument("-f", "--from_block", default=-1, dest="from_block_num", metavar="integer", help="Stream from block_num")
-    parser.add_argument("-t", "--to_block", default=-1, dest="to_block_num", metavar="integer", help="Stream to block_num")
+    parser.add_argument("-x", "--tx_signer", default="porter", dest="tx_signer", metavar="SIGNER", help="Name of the account that will sign transactions")
+    parser.add_argument("-f", "--from_block", default=-1, dest="from_block_num", metavar="INT", help="Stream from block_num")
+    parser.add_argument("-t", "--to_block", default=-1, dest="to_block_num", metavar="INT", help="Stream to block_num")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
@@ -60,10 +63,7 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
-    backend = SteemRemoteBackend(nodes=[args.server], appbase=True)
-    steemd = SteemInterface(backend)
-
-    for action in stream_actions(steemd, int(args.from_block_num), int(args.to_block_num)):
+    for action in stream_actions(args.server, args.tx_signer, int(args.from_block_num), int(args.to_block_num)):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
