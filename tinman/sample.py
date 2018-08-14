@@ -17,7 +17,7 @@ def main(argv):
     if args.infile == "-":
         infile = sys.stdin
     else:
-        infile = open(args.infile, "w")
+        infile = open(args.infile, "r")
 
     with open(args.infile, "r") as f:
         snapshot = json.load(f, object_pairs_hook=collections.OrderedDict)
