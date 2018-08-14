@@ -121,7 +121,7 @@ def iterate_operations_from(steemd, is_appbase, min_block_number, max_block_numb
         for another_transaction in block_transactions:
             transaction_operations = another_transaction["operations"]
             for another_operation in transaction_operations:
-                if not filter_operation or another_operation[0] in searched_operation_names:
+                if not filter_operation or another_operation['type'] in searched_operation_names:
                     yield another_operation
     return
 

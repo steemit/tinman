@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 import time
-import simple_steem_client
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from . import prockey
 from . import util
@@ -22,8 +22,8 @@ def repack_operations(conf, keydb):
     """
     source_node = conf["transaction_source"]["node"]
     is_appbase = str2bool(conf["transaction_source"]["appbase"])
-    backend = simple_steem_client.simple_steem_client.client.SteemRemoteBackend(nodes=[source_node], appbase=is_appbase)
-    steemd = simple_steem_client.simple_steem_client.client.SteemInterface(backend)
+    backend = SteemRemoteBackend(nodes=[source_node], appbase=is_appbase)
+    steemd = SteemInterface(backend)
     min_block = int(conf["min_block_number"])
     max_block = int(conf["max_block_number"])
     ported_operations = set(conf["ported_operations"])

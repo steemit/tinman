@@ -169,6 +169,31 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
+# Port Oracle
+
+Populating the test network with transactions ported over from the main network.
+
+To port from genesis:
+
+```bash
+jq '.min_block_number = 1' port.conf.example > port.conf
+tinman port -c port.conf -o -
+```
+
+To port from block 25066272 to 25066292:
+
+```bash
+jq '.min_block_number = 25066272 | .max_block_number = 25066292' port.conf.example > port.conf
+tinman port -c port.conf -o -
+```
+
+To port from block 25066272 then stream from `head_block_number`:
+
+```bash
+jq '.min_block_number = 25066272' port.conf.example > port.conf
+tinman port -c port.conf -o -
+```
+
 # Running testnet witness node(s)
 
 At the end of the transactions to be submitted, `tinman txgen` creates witnesses `init-0` through `init-20`
