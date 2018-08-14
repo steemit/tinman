@@ -64,7 +64,7 @@ def build_actions(conf):
 
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Port transactions for Steem testnet")
-    parser.add_argument("-c", "--conffile", default="", dest="conffile", metavar="FILE", help="Specify configuration file")
+    parser.add_argument("-c", "--conffile", default="gatling.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 

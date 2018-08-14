@@ -5,7 +5,7 @@ import sys
 
 from . import snapshot
 from . import txgen
-from . import port
+from . import gatling
 from . import keysub
 from . import sample
 from . import submit
@@ -23,7 +23,7 @@ class Help(object):
 commands = collections.OrderedDict((
             ("snapshot", snapshot),
             ("txgen"   , txgen   ),
-            ("port"    , port    ),
+            ("gatling" , gatling ),
             ("keysub"  , keysub  ),
             ("sample"  , sample  ),
             ("submit"  , submit  ),

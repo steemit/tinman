@@ -169,29 +169,29 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
-# Port Oracle
+# Gatling transactions from mainnet
 
-Populating the test network with transactions ported over from the main network.
+Populating the test network with transactions from the main network.
 
-To port from genesis:
+To stream from genesis:
 
 ```bash
-jq '.min_block_number = 1' port.conf.example > port.conf
-tinman port -c port.conf -o -
+jq '.min_block_number = 1' gatling.conf.example > gatling.conf
+tinman gatling -o -
 ```
 
-To port from block 25066272 to 25066292:
+To stream from block 25066272 to 25066292:
 
 ```bash
-jq '.min_block_number = 25066272 | .max_block_number = 25066292' port.conf.example > port.conf
-tinman port -c port.conf -o -
+jq '.min_block_number = 25066272 | .max_block_number = 25066292' gatling.conf.example > gatling.conf
+tinman gatling -o -
 ```
 
-To port from block 25066272 then stream from `head_block_number`:
+To stream starting from block 25066272:
 
 ```bash
-jq '.min_block_number = 25066272' port.conf.example > port.conf
-tinman port -c port.conf -o -
+jq '.min_block_number = 25066272' gatling.conf.example > gatling.conf
+tinman gatling -o -
 ```
 
 # Running testnet witness node(s)
