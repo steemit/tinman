@@ -23,7 +23,7 @@ def main(argv):
         snapshot = json.load(f, object_pairs_hook=collections.OrderedDict)
         snapshot["witnesses"] = []
         snapshot["accounts"] = heapq.nlargest(sample_size, snapshot["accounts"],
-            key=lambda a : int(a["balance"][0]))
+            key=lambda a : int(a["balance"]["amount"]))
 
     if args.infile != "-":
         infile.close()
@@ -32,7 +32,7 @@ def main(argv):
         outfile = sys.stdout
     else:
         outfile = open(args.outfile, "w")
-    json.dump(snapshot, f, separators=(",", ":"))
+    json.dump(snapshot, outfile, separators=(",", ":"))
 
     if args.outfile != "-":
         outfile.close()
