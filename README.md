@@ -169,6 +169,28 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
+# Gatling transactions from mainnet
+
+Populating the test network with transactions from the main network.
+
+To stream from genesis:
+
+```bash
+tinman gatling -f 1 -o -
+```
+
+To stream from block 25066272 to 25066292:
+
+```bash
+tinman gatling -f 25066272 -t 25066292 -o -
+```
+
+To stream starting from block 25066272:
+
+```bash
+tinman gatling -f 25066272 -o -
+```
+
 # Running testnet witness node(s)
 
 At the end of the transactions to be submitted, `tinman txgen` creates witnesses `init-0` through `init-20`
