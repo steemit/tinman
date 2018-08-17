@@ -44,7 +44,7 @@ class ProceduralKeyResolver(object):
     def get(self, seed=""):
         pair = self.seed2pair.get(seed)
         if pair is None:
-            pair = compute_keypair_from_seed(self.seed, secret, get_dev_key_exe=self.get_dev_key_exe)
+            pair = compute_keypair_from_seed(self.seed, self.secret, get_dev_key_exe=self.get_dev_key_exe)
             self.seed2pair[seed] = pair
         return pair
 
