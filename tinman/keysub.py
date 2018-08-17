@@ -23,8 +23,8 @@ def process_esc(s, esc="", resolver=None):
             raise RuntimeError("invalid input")
     return "".join(result)
 
-def compute_keypair_from_seed(seed, get_dev_key_exe="get_dev_key"):
-    result_bytes = subprocess.check_output([get_dev_key_exe, "", seed])
+def compute_keypair_from_seed(seed, secret, get_dev_key_exe="get_dev_key"):
+    result_bytes = subprocess.check_output([get_dev_key_exe, secret, seed])
     result_str = result_bytes.decode("utf-8")
     result_json = json.loads(result_str.strip())
     return (result_json[0]["public_key"], result_json[0]["private_key"])
@@ -44,7 +44,7 @@ class ProceduralKeyResolver(object):
     def get(self, seed=""):
         pair = self.seed2pair.get(seed)
         if pair is None:
-            pair = compute_keypair_from_seed(self.secret+seed, get_dev_key_exe=self.get_dev_key_exe)
+            pair = compute_keypair_from_seed(self.seed, self.secret, get_dev_key_exe=self.get_dev_key_exe)
             self.seed2pair[seed] = pair
         return pair
 
