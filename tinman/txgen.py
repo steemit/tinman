@@ -235,7 +235,7 @@ def port_snapshot(conf, keydb):
 
     return
 
-def build_actions(conf):
+def build_actions(conf, gapless=True):
     keydb = prockey.ProceduralKeyDatabase()
 
     start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
@@ -254,13 +254,16 @@ def build_actions(conf):
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         yield ["submit_transaction", {"tx" : tx}]
-    yield ["wait_blocks", {"count" : 1000000000}]
+    
+    if gapless:
+      yield ["wait_blocks", {"count" : 1000000000}]
 
     return
 
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="", dest="conffile", metavar="FILE", help="Specify configuration file")
+    parser.add_argument("--gapless", dest="gapless", action="store_true", help="Append final actions of empty blocks - used for gap free startup")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
@@ -272,7 +275,7 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
-    for action in build_actions(conf):
+    for action in build_actions(conf, args.gapless):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
