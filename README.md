@@ -176,22 +176,19 @@ Populating the test network with transactions from the main network.
 To stream from genesis:
 
 ```bash
-jq '.min_block_number = 1' gatling.conf.example > gatling.conf
-tinman gatling -o -
+tinman gatling -f 1 -o -
 ```
 
 To stream from block 25066272 to 25066292:
 
 ```bash
-jq '.min_block_number = 25066272 | .max_block_number = 25066292' gatling.conf.example > gatling.conf
-tinman gatling -o -
+tinman gatling -f 25066272 -t 25066292 -o -
 ```
 
 To stream starting from block 25066272:
 
 ```bash
-jq '.min_block_number = 25066272' gatling.conf.example > gatling.conf
-tinman gatling -o -
+tinman gatling -f 25066272 -o -
 ```
 
 # Running testnet witness node(s)

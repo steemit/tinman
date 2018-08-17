@@ -15,7 +15,7 @@ def str2bool(str_arg):
     """
     return True if str_arg.lower() == 'true' else (False if str_arg.lower() == 'false' else None)
 
-def repack_operations(conf, keydb):
+def repack_operations(conf, keydb, min_block, max_block):
     """
     Uses configuration file data to acquire operations from source node
     blocks/transactions and repack them in new transactions one to one.
@@ -24,8 +24,8 @@ def repack_operations(conf, keydb):
     is_appbase = str2bool(conf["transaction_source"]["appbase"])
     backend = SteemRemoteBackend(nodes=[source_node], appbase=is_appbase)
     steemd = SteemInterface(backend)
-    min_block = int(conf["min_block_number"])
-    max_block = int(conf["max_block_number"])
+    min_block = int(conf["min_block_number"]) if min_block == 0 else min_block
+    max_block = int(conf["max_block_number"]) if max_block == 0 else max_block
     ported_operations = set(conf["ported_operations"])
     tx_signer = conf["transaction_signer"]
     """ Positive value of max_block means get from [min_block_number,max_block_number) range and stop """
@@ -50,12 +50,12 @@ def repack_operations(conf, keydb):
         old_head_block = new_head_block
     return
 
-def build_actions(conf):
+def build_actions(conf, min_block, max_block):
     """
     Packs transactions rebuilt with operations acquired from source node into blocks of configured size.
     """
     keydb = prockey.ProceduralKeyDatabase()
-    for b in util.batch(repack_operations(conf, keydb), conf["transactions_per_block"]):
+    for b in util.batch(repack_operations(conf, keydb, min_block, max_block), conf["transactions_per_block"]):
         yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
@@ -65,6 +65,8 @@ def build_actions(conf):
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Port transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="gatling.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
+    parser.add_argument("-f", "--from_block", default=0, dest="min_block_num", metavar="INT", help="Stream from block_num")
+    parser.add_argument("-t", "--to_block", default=0, dest="max_block_num", metavar="INT", help="Stream to block_num")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
@@ -76,7 +78,7 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
-    for action in build_actions(conf):
+    for action in build_actions(conf, int(args.min_block_num), int(args.max_block_num)):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
