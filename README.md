@@ -132,19 +132,19 @@ to `tinman keysub`.
 The `get_dev_key` program provided with `steemd` derives
 keys using the same algorithm as `tinman keysub`.
 
-# Running testnet fastgen node
+# Bootstraping the testnet 
 
-Now that the transactions have been created, let's use them to initialize a testnet.
+Now that the transactions have been created, let's use them to bootstrap a testnet.
 Since many blocks worth of transactions are created, `tinman submit` will
 implement the block wait using `debug_node_plugin` to generate blocks in the
 past as rapidly as possible.  So we will run a special node, let's call it the
-"fastgen node", with the debug plugin enabled.  The fastgen node is only used to
-initialize the network.  (It is called "fastgen" because it generates blocks
+"bootstrap node", with the debug plugin enabled.  The bootstrap node is only used to
+initialize the network.  (It used to be called "fastgen" because it generates blocks
 as fast as possible, rather than waiting 3 seconds of real time between each
 block.)  Later, one or more normal witness nodes will connect
-to the fastgen node over p2p, get blocks, and begin normal block production.
+to the bootstrap node over p2p, get blocks, and begin normal block production.
 
-The fastgen node needs the following:
+The bootstrap node needs the following:
 
 - The `steemd` must be `appbase` version
 - The testnet `blockchain` directory should be empty (try `rm -Rf testnet_datadir/blockchain`)
@@ -209,7 +209,7 @@ where `xxx` is the `"secret"` string in `txgen.conf`.
 
 So in order to transition block production duties away from the initial node, all that is required
 is to connect witness nodes with the correct block production settings.  Each witness node should
-specify the fastgen node using the `p2p-seed-node` option in the config file.
+specify the boostrap node using the `p2p-seed-node` option in the config file.
 
 Therefore we may add the witness definitions and private keys to the witness config file:
 
