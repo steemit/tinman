@@ -62,14 +62,18 @@ def vote_accounts(conf, keydb, elector, elected):
         yield {"operations" : ops, "wif_sigs" : [keydb.get_privkey(er_name)]}
     return
 
-def update_witnesses(conf, keydb, name):
+def update_witnesses(conf, keydb, name, gapless=True):
     desc = conf["accounts"][name]
     for index in range(desc["count"]):
         name = desc["name"].format(index=index)
+        if gapless:
+          block_signing_key = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+        else:
+          block_signing_key = keydb.get_pubkey(name, 'block')
         yield {"operations" : [{"type" : "witness_update_operation", "value" : {
             "owner" : name,
             "url" : "https://steemit.com/",
-            "block_signing_key" : "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
+            "block_signing_key" : block_signing_key,
             "props" : {},
             "fee" : amount(0),
            }}],
@@ -250,7 +254,7 @@ def build_actions(conf, gapless=True):
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
 
-    for tx in update_witnesses(conf, keydb, "init"):
+    for tx in update_witnesses(conf, keydb, "init", gapless):
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         yield ["submit_transaction", {"tx" : tx}]
