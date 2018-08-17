@@ -39,8 +39,6 @@
   "limit_order_cancel_operation",
   "limit_order_create2_operation",
   "limit_order_create_operation",
-  "pow2_operation",
-  "pow_operation",
   "price_operation",
   "prove_authority_operation",
   "recover_account_operation",
