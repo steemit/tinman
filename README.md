@@ -24,7 +24,7 @@ modifying the `PATH` and the prompt of the current shell,
 by sourcing the `activate` script:
 
 ```
-sudo apt-get install virtualenv python3
+sudo apt-get install virtualenv python3 yajl
 virtualenv -p $(which python3) ~/ve/tinman
 source ~/ve/tinman/bin/activate
 ```
@@ -226,3 +226,5 @@ to specify `--enable-stale-production` and `--required-participation=0` flags.  
 long as a sufficient number of other witness nodes are timely producing blocks, it
 is not necessary to use these flags once 128 blocks have been produced after the
 transition.
+
+<img src="https://i.imgur.com/h57pDVE.png" width="25%" height="25%" />

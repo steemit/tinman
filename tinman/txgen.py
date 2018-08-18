@@ -9,6 +9,14 @@ import os
 import random
 import sys
 
+try:
+    import ijson.backends.yajl2_cffi as ijson
+    from cffi import FFI
+    YAJL2_CFFI_AVAILABLE = True
+except ImportError:
+    import ijson
+    YAJL2_CFFI_AVAILABLE = False
+    
 from . import prockey
 from . import util
 
@@ -127,18 +135,20 @@ def get_system_account_names(conf):
     return
 
 def port_snapshot(conf, keydb):
-    with open(conf["snapshot_file"], "r") as f:
-        snapshot = json.load(f)
     total_vests = 0
     total_steem = 0
 
     system_account_names = set(get_system_account_names(conf))
 
-    def user_accounts():
-        return (a for a in snapshot["accounts"] if a["name"] not in system_account_names)
+    snapshot_file = open(conf["snapshot_file"], "rb")
 
+    account_names = []
     num_accounts = 0
-    for acc in user_accounts():
+    for acc in ijson.items(snapshot_file, "accounts.item"):
+        if acc["name"] in system_account_names:
+            continue
+        
+        account_names.append(acc["name"])
         total_vests += satoshis(acc["vesting_shares"])
         total_steem += satoshis(acc["balance"])
         num_accounts += 1
@@ -149,10 +159,14 @@ def port_snapshot(conf, keydb):
     # - Everyone's testnet balance is proportional to their mainnet balance
     # - Everyone has at least min_vesting_per_account
 
-    dgpo = snapshot["dynamic_global_properties"]
+    snapshot_file.seek(0)
+    for prefix, event, value in ijson.parse(snapshot_file):
+        if prefix == "dynamic_global_properties.total_vesting_fund_steem.amount":
+            total_vesting_steem = int(value)
+            break
+
     denom = 10**12        # we need stupidly high precision because VESTS
     min_vesting_per_account = satoshis(conf["min_vesting_per_account"])
-    total_vesting_steem = satoshis(dgpo["total_vesting_fund_steem"])
     total_port_balance = satoshis(conf["total_port_balance"])
     avail_port_balance = total_port_balance - min_vesting_per_account * num_accounts
     if avail_port_balance < 0:
@@ -188,7 +202,8 @@ def port_snapshot(conf, keydb):
 
     create_auth = {"account_auths" : [["porter", 1]], "key_auths" : [], "weight_threshold" : 1}
 
-    for a in user_accounts():
+    snapshot_file.seek(0)
+    for a in ijson.items(snapshot_file, "accounts.item"):
         vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // denom
         transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // denom
         name = a["name"]
@@ -214,12 +229,13 @@ def port_snapshot(conf, keydb):
 
         yield {"operations" : ops, "wif_sigs" : [porter_wif]}
 
-    for a in user_accounts():
+    snapshot_file.seek(0)
+    for a in ijson.items(snapshot_file, "accounts.item"):
         cur_auth = json.loads(json.dumps(a["posting"]))
         non_existing_account_auths = []
         # filter to only include existing accounts
         cur_auth["account_auths"] = [aw for aw in cur_auth["account_auths"] if
-           (aw in snapshot["accounts"]) and (aw not in system_account_names)]
+           (aw in account_names) and (aw not in system_account_names)]
 
         # add tnman to account_auths
         cur_auth["account_auths"].append([tnman, cur_auth["weight_threshold"]])
@@ -237,6 +253,7 @@ def port_snapshot(conf, keydb):
 
         yield {"operations" : ops, "wif_sigs" : [porter_wif]}
 
+    snapshot_file.close()
     return
 
 def build_actions(conf, gapless=True):
