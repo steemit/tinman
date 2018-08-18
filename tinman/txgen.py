@@ -88,12 +88,12 @@ def update_witnesses(conf, keydb, name, gapless=True):
            "wif_sigs" : [keydb.get_privkey(name)]}
     return
 
-def build_setup_transactions(conf, keydb):
+def build_setup_transactions(conf, keydb, silent=True):
     yield from create_accounts(conf, keydb, "init")
     yield from create_accounts(conf, keydb, "elector")
     yield from create_accounts(conf, keydb, "manager")
     yield from create_accounts(conf, keydb, "porter")
-    yield from port_snapshot(conf, keydb)
+    yield from port_snapshot(conf, keydb, silent)
 
 def build_initminer_tx(conf, keydb):
     return {"operations" : [
@@ -134,25 +134,32 @@ def get_system_account_names(conf):
             yield name
     return
 
-def port_snapshot(conf, keydb):
+def port_snapshot(conf, keydb, silent=True):
     total_vests = 0
     total_steem = 0
 
     system_account_names = set(get_system_account_names(conf))
 
+    if not silent and not YAJL2_CFFI_AVAILABLE:
+        print("Warning: could not load yajl, falling back to default backend for ijson.")
+
     snapshot_file = open(conf["snapshot_file"], "rb")
 
-    account_names = []
+    account_names = set()
     num_accounts = 0
     for acc in ijson.items(snapshot_file, "accounts.item"):
         if acc["name"] in system_account_names:
             continue
         
-        account_names.append(acc["name"])
+        account_names.add(acc["name"])
         total_vests += satoshis(acc["vesting_shares"])
         total_steem += satoshis(acc["balance"])
         num_accounts += 1
 
+        if not silent:
+            if num_accounts % 100000 == 0:
+                print("Accounts read:", num_accounts)
+    
     # We have a fixed amount of STEEM to give out, specified by total_port_balance
     # This needs to be given out subject to the following constraints:
     # - The ratio of vesting : liquid STEEM is the same on testnet,
@@ -176,16 +183,15 @@ def port_snapshot(conf, keydb):
     vest_conversion_factor  = (denom * total_port_vesting) // total_vests
     steem_conversion_factor = (denom * total_port_liquid ) // total_steem
 
-    """
-    print("total_vests:", total_vests)
-    print("total_steem:", total_steem)
-    print("total_vesting_steem:", total_vesting_steem)
-    print("total_port_balance:", total_port_balance)
-    print("total_port_vesting:", total_port_vesting)
-    print("total_port_liquid:", total_port_liquid)
-    print("vest_conversion_factor:", vest_conversion_factor)
-    print("steem_conversion_factor:", steem_conversion_factor)
-    """
+    if not silent:
+        print("total_vests:", total_vests)
+        print("total_steem:", total_steem)
+        print("total_vesting_steem:", total_vesting_steem)
+        print("total_port_balance:", total_port_balance)
+        print("total_port_vesting:", total_port_vesting)
+        print("total_port_liquid:", total_port_liquid)
+        print("vest_conversion_factor:", vest_conversion_factor)
+        print("steem_conversion_factor:", steem_conversion_factor)
 
     porter = conf["accounts"]["porter"]["name"]
 
@@ -203,6 +209,7 @@ def port_snapshot(conf, keydb):
     create_auth = {"account_auths" : [["porter", 1]], "key_auths" : [], "weight_threshold" : 1}
 
     snapshot_file.seek(0)
+    accounts_created = 0
     for a in ijson.items(snapshot_file, "accounts.item"):
         vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // denom
         transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // denom
@@ -226,10 +233,21 @@ def port_snapshot(conf, keydb):
              "amount" : amount(transfer_amount),
              "memo" : "Ported balance",
              }})
+        
+        accounts_created += 1
+        if not silent:
+            if accounts_created % 100000 == 0:
+                print("Accounts created:", accounts_created)
+                print("\t", '%.2f%% complete' % (accounts_created / num_accounts * 100.0))
 
         yield {"operations" : ops, "wif_sigs" : [porter_wif]}
+        
+    if not silent:
+        print("Accounts created:", accounts_created)
+        print("\t100.00%% complete")
 
     snapshot_file.seek(0)
+    accounts_updated = 0
     for a in ijson.items(snapshot_file, "accounts.item"):
         cur_owner_auth = a["owner"]
         new_owner_auth = cur_owner_auth.copy()
@@ -268,12 +286,22 @@ def port_snapshot(conf, keydb):
           "json_metadata" : a["json_metadata"],
           }}]
 
+        accounts_updated += 1
+        if not silent:
+            if accounts_updated % 100000 == 0:
+                print("Accounts updated:", accounts_updated)
+                print("\t", '%.2f%% complete' % (accounts_updated / num_accounts * 100.0))
+        
         yield {"operations" : ops, "wif_sigs" : [porter_wif]}
+    
+    if not silent:
+        print("Accounts updated:", accounts_updated)
+        print("\t100.00%% complete")
 
     snapshot_file.close()
     return
 
-def build_actions(conf, gapless=True):
+def build_actions(conf, gapless=True, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
 
     start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
@@ -283,7 +311,7 @@ def build_actions(conf, gapless=True):
 
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
-    for b in util.batch(build_setup_transactions(conf, keydb), conf["transactions_per_block"]):
+    for b in util.batch(build_setup_transactions(conf, keydb, silent), conf["transactions_per_block"]):
         yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
@@ -313,7 +341,7 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
-    for action in build_actions(conf, args.gapless):
+    for action in build_actions(conf, args.gapless, args.outfile == "-"):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 

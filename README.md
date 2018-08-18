@@ -24,7 +24,7 @@ modifying the `PATH` and the prompt of the current shell,
 by sourcing the `activate` script:
 
 ```
-sudo apt-get install virtualenv python3 yajl
+sudo apt-get install virtualenv python3 libyajl-dev
 virtualenv -p $(which python3) ~/ve/tinman
 source ~/ve/tinman/bin/activate
 ```
@@ -40,6 +40,8 @@ cd ~/src
 git clone git@github.com:steemit/tinman
 cd tinman
 git submodule update --init --recursive
+pip install pipenv
+pipenv install
 pip install .
 ```
 
@@ -74,7 +76,7 @@ First, we set up a `steemd` for the main network.  This `steemd` must be the fol
 tinman snapshot -s http://127.0.0.1:8090 -o snapshot.json
 ```
 
-As of this writing, the above command takes approximately 5 minutes, writing an approximately 1 GB JSON file with 500,000 lines.
+As of this writing, the above command takes approximately 5 minutes, writing an approximately 2 GB JSON file with 1,000,000 lines.
 If you're running `tinman snapshot` interactively and you would like a visual progress indicator, you can install the `pv` program
 (`apt-get install pv`) and use it to display the output line count in real time:
 
@@ -89,7 +91,8 @@ transactions which create and fund the accounts, and wait-for-block instructions
 which control the rate at which transactions occur:
 
 ```
-# As of this writing, this command takes ~10 minutes, consumes ~4GB of RAM
+# As of this writing, this command takes ~10 minutes to start writing actions,
+# consumes ~200MB of RAM, with all actions created in about two hours
 tinman txgen -c txgen.conf -o tn.txlist
 ```
 
