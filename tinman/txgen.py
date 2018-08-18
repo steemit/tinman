@@ -231,22 +231,39 @@ def port_snapshot(conf, keydb):
 
     snapshot_file.seek(0)
     for a in ijson.items(snapshot_file, "accounts.item"):
-        cur_auth = json.loads(json.dumps(a["posting"]))
-        non_existing_account_auths = []
+        cur_owner_auth = a["owner"]
+        new_owner_auth = cur_owner_auth.copy()
+        cur_active_auth = a["active"]
+        new_active_auth = cur_active_auth.copy()
+        cur_posting_auth = a["posting"]
+        new_posting_auth = cur_posting_auth.copy()
+        
         # filter to only include existing accounts
-        cur_auth["account_auths"] = [aw for aw in cur_auth["account_auths"] if
-           (aw in account_names) and (aw not in system_account_names)]
+        for aw in cur_owner_auth["account_auths"]:
+            if (aw[0] not in account_names) or (aw[0] in system_account_names):
+                new_owner_auth["account_auths"].remove(aw)
+        for aw in cur_active_auth["account_auths"]:
+            if (aw[0] not in account_names) or (aw[0] in system_account_names):
+                new_active_auth["account_auths"].remove(aw)
+        for aw in cur_posting_auth["account_auths"]:
+            if (aw[0] not in account_names) or (aw[0] in system_account_names):
+                new_posting_auth["account_auths"].remove(aw)
 
         # add tnman to account_auths
-        cur_auth["account_auths"].append([tnman, cur_auth["weight_threshold"]])
+        new_owner_auth["account_auths"].append([tnman, cur_owner_auth["weight_threshold"]])
+        new_active_auth["account_auths"].append([tnman, cur_active_auth["weight_threshold"]])
+        new_posting_auth["account_auths"].append([tnman, cur_posting_auth["weight_threshold"]])
+        
         # substitute prefix for key_auths
-        cur_auth["key_auths"] = [["TST"+k[3:], w] for k, w in cur_auth["key_auths"]]
+        new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"]]
+        new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"]]
+        new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"]]
 
         ops = [{"type" : "account_update_operation", "value" : {
           "account" : a["name"],
-          "owner" : cur_auth,
-          "active" : cur_auth,
-          "posting" : cur_auth,
+          "owner" : new_owner_auth,
+          "active" : new_active_auth,
+          "posting" : new_posting_auth,
           "memo_key" : "TST"+a["memo_key"][3:],
           "json_metadata" : a["json_metadata"],
           }}]
