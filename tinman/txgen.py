@@ -194,6 +194,7 @@ def port_snapshot(conf, keydb, silent=True):
         print("steem_conversion_factor:", steem_conversion_factor)
 
     porter = conf["accounts"]["porter"]["name"]
+    tnman = conf["accounts"]["manager"]["name"]
 
     yield {"operations" : [
       {"type" : "transfer_operation",
@@ -211,10 +212,12 @@ def port_snapshot(conf, keydb, silent=True):
     snapshot_file.seek(0)
     accounts_created = 0
     for a in ijson.items(snapshot_file, "accounts.item"):
+        if a["name"] in system_account_names:
+            continue
+        
         vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // denom
         transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // denom
         name = a["name"]
-        tnman = conf["accounts"]["manager"]["name"]
 
         ops = [{"type" : "account_create_operation", "value" : {
           "fee" : amount(max(vesting_amount, min_vesting_per_account)),
@@ -249,6 +252,9 @@ def port_snapshot(conf, keydb, silent=True):
     snapshot_file.seek(0)
     accounts_updated = 0
     for a in ijson.items(snapshot_file, "accounts.item"):
+        if a["name"] in system_account_names:
+            continue
+        
         cur_owner_auth = a["owner"]
         new_owner_auth = cur_owner_auth.copy()
         cur_active_auth = a["active"]
