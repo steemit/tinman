@@ -354,7 +354,15 @@ def main(argv):
     else:
         outfile = open(args.outfile, "w")
 
+    #build the actions list (building before writing so we can know the count and prepend it)
+    actions = []
     for action in build_actions(conf, args.gapless, args.outfile == "-"):
+        actions.append(action)
+
+    #the last action is the transaction_count, which we need to be at the beginning of the output for submit.py
+    outfile.write(util.action_to_str(actions.pop()))
+    
+    for action in actions:
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 
