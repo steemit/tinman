@@ -309,7 +309,7 @@ def port_snapshot(conf, keydb, silent=True):
 
 def build_actions(conf, gapless=True, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
-
+    transaction_count = 0
     start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
@@ -317,18 +317,25 @@ def build_actions(conf, gapless=True, silent=True):
 
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
+    transaction_count += 1
     for b in util.batch(build_setup_transactions(conf, keydb, silent), conf["transactions_per_block"]):
         yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
+            transaction_count += 1
 
     for tx in update_witnesses(conf, keydb, "init", gapless):
+        transaction_count += 1
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
+        transaction_count += 1
         yield ["submit_transaction", {"tx" : tx}]
-    
     if gapless:
       yield ["wait_blocks", {"count" : 1000000000}]
+
+    #for piping & compatibility with submit.py we need to move this to the top of the file (likely by using a tmp file
+    # for all previous operations, and then appending the tmp to the final output file, of which this is the 1st line
+    yield ["transaction_count", {"count" : transaction_count}]
 
     return
 

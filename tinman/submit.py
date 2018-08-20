@@ -4,6 +4,7 @@ from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from binascii import hexlify, unhexlify
 
+import int
 import argparse
 import datetime
 import hashlib
@@ -16,6 +17,9 @@ import time
 import traceback
 
 from . import util
+
+STEEM_GENESIS_TIMESTAMP = 1451606400
+STEEM_BLOCK_INTERVAL = 3
 
 class TransactionSigner(object):
     def __init__(self, sign_transaction_exe=None, chain_id=None):
@@ -112,6 +116,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser(prog=argv[0], description="Submit transactions to Steem")
     parser.add_argument("-t", "--testserver", default="http://127.0.0.1:8190", dest="testserver", metavar="URL", help="Specify testnet steemd server with debug enabled")
+    parser.add_argument("-txb", "--transactions_per_block", default="-1", dest="transactions_per_block", metavar="Number", type=int, help="The number of transactions to send before triggering block production with the 'wait_block' operation")
     parser.add_argument("--signer", default="sign_transaction", dest="sign_transaction_exe", metavar="FILE", help="Specify path to sign_transaction tool")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")
     parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
@@ -149,16 +154,18 @@ def main(argv):
         chain_id = None
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
-
+    transaction_count = -1
     for line in input_file:
         line = line.strip()
         cmd, args = json.loads(line)
 
         try:
-            if cmd == "wait_blocks":
-                generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
-                cached_dgpo.reset()
+            if cmd == "wait_blocks" :
+                if args.transactions_per_block == -1 :
+
+                    cached_dgpo.reset()
             elif cmd == "submit_transaction":
+                transaction_count += 1;
                 tx = args["tx"]
                 dgpo = cached_dgpo.get()
                 tx["ref_block_num"] = dgpo["head_block_number"] & 0xFFFF
@@ -182,13 +189,28 @@ def main(argv):
                         sigs.append(result["result"]["sig"])
                 tx["signatures"] = sigs
                 print("bcast:", json.dumps(tx, separators=(",", ":")))
+            elif cmd == "transaction_count" and transaction_count == -1 and args.transactions_per_block > 0:
+                #If our args include 'transactions_per_block' we're expecting a snapshot that includes the number of transactions
+                #That means we can calculate the start time 'on the fly' and get *very* close to a real-time transition to normal block production
+                transaction_count = 0
+                genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
+                bootstrap_completion_target_time = (datetime.utcnow() + datetime.timedelta(minutes = 15))
+                transaction_start_seconds = int(bootstrap_completion_target_time.total_seconds()) - ((args.count // args.transactions_per_block) * STEEM_BLOCK_INTERVAL)
+                miss_blocks = {'count' : (transaction_start_seconds - genesis_time) // STEEM_BLOCK_INTERVAL }
+                generate_blocks(steemd, miss_blocks, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
 
                 steemd.network_broadcast_api.broadcast_transaction(trx=tx)
+            if  args.transactions_per_block > 0 and (0 == transaction_count % args.transactions_per_block) :
+                generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+                cached_dgpo.reset()
         except Exception as e:
             fail_file.write(json.dumps([cmd, args, str(e)])+"\n")
             fail_file.flush()
             if die_on_fail:
                 raise
+    if  args.transactions_per_block > 0 :
+        print("Because transactions_per_block was specificed we should be close to the present moment.")
+        print("skipping any last-instruction empty block production")
 
 if __name__ == "__main__":
     main(sys.argv)
