@@ -197,6 +197,7 @@ def main(argv):
                 bootstrap_completion_target_time = (datetime.utcnow() + datetime.timedelta(minutes = 15))
                 transaction_start_seconds = int(bootstrap_completion_target_time.total_seconds()) - ((args.count // args.transactions_per_block) * STEEM_BLOCK_INTERVAL)
                 miss_blocks = {'count' : (transaction_start_seconds - genesis_time) // STEEM_BLOCK_INTERVAL }
+                miss_blocks = max(miss_blocks-1, 0)
                 generate_blocks(steemd, miss_blocks, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
 
             if  args.transactions_per_block > 0 and (0 == transaction_count % args.transactions_per_block) :

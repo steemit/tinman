@@ -361,7 +361,7 @@ def main(argv):
 
     #the last action is the transaction_count, which we need to be at the beginning of the output for submit.py
     outfile.write(util.action_to_str(actions.pop()))
-    
+
     for action in actions:
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
