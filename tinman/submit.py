@@ -4,7 +4,6 @@ from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 from binascii import hexlify, unhexlify
 
-import int
 import argparse
 import datetime
 import hashlib
@@ -162,7 +161,7 @@ def main(argv):
         try:
             if cmd == "wait_blocks" :
                 if args.transactions_per_block == -1 :
-
+                    generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
                     cached_dgpo.reset()
             elif cmd == "submit_transaction":
                 transaction_count += 1;
@@ -189,6 +188,7 @@ def main(argv):
                         sigs.append(result["result"]["sig"])
                 tx["signatures"] = sigs
                 print("bcast:", json.dumps(tx, separators=(",", ":")))
+                steemd.network_broadcast_api.broadcast_transaction(trx=tx)
             elif cmd == "transaction_count" and transaction_count == -1 and args.transactions_per_block > 0:
                 #If our args include 'transactions_per_block' we're expecting a snapshot that includes the number of transactions
                 #That means we can calculate the start time 'on the fly' and get *very* close to a real-time transition to normal block production
@@ -199,7 +199,6 @@ def main(argv):
                 miss_blocks = {'count' : (transaction_start_seconds - genesis_time) // STEEM_BLOCK_INTERVAL }
                 generate_blocks(steemd, miss_blocks, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
 
-                steemd.network_broadcast_api.broadcast_transaction(trx=tx)
             if  args.transactions_per_block > 0 and (0 == transaction_count % args.transactions_per_block) :
                 generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
                 cached_dgpo.reset()
