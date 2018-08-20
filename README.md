@@ -103,7 +103,6 @@ Some notes about `tinman txgen`:
 - Balances are created by dividing `total_port_balance` proportionally among the live STEEM and vesting, subject to `min_vesting_per_account`.
 - Therefore, testnet balance is not equal to mainnet balance.  Rather, it is proportional to mainnet balance.
 - Accounts listed in `txgen.conf` are considered system accounts, any identically named account in the snapshot will not be ported
-- Passing `--gapless` to `txgen` will append final actions of empty blocks (right after creating witnesses) for gap free startup, see: [Running testnet witness node(s)](#running-testnet-witness-nodes).
 
 # Keys substitution
 
