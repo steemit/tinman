@@ -311,10 +311,6 @@ def port_snapshot(conf, keydb, silent=True):
 def build_actions(conf, static_witness_key=True, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
     transaction_count = 0
-    start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
-    genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
-    miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
-    miss_blocks = max(miss_blocks-1, 0)
 
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
     transaction_count += 1
