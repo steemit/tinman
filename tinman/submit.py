@@ -19,6 +19,8 @@ from . import util
 
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
+DEBUG_KEY = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+
 
 class TransactionSigner(object):
     def __init__(self, sign_transaction_exe=None, chain_id=None):
@@ -75,7 +77,7 @@ def generate_blocks(steemd, args, cached_dgpo=None, now=None, produce_realtime=F
 
     if not produce_realtime:
         steemd.debug_node_api.debug_generate_blocks(
-            debug_key="5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n",
+            debug_key=DEBUG_KEY,
             count=args["count"],
             skip=0,
             miss_blocks=miss_blocks,
@@ -92,7 +94,7 @@ def generate_blocks(steemd, args, cached_dgpo=None, now=None, produce_realtime=F
     wait_for_real_time(next_time)
     print("calling debug_generate_blocks, miss_blocks={}".format(miss_blocks))
     steemd.debug_node_api.debug_generate_blocks(
-           debug_key="5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n",
+           debug_key=DEBUG_KEY,
            count=1,
            skip=0,
            miss_blocks=miss_blocks,
@@ -103,7 +105,7 @@ def generate_blocks(steemd, args, cached_dgpo=None, now=None, produce_realtime=F
         next_time += datetime.timedelta(seconds=3)
         wait_for_real_time(next_time)
         steemd.debug_node_api.debug_generate_blocks(
-               debug_key="5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n",
+               debug_key=DEBUG_KEY,
                count=1,
                skip=0,
                miss_blocks=0,
@@ -115,7 +117,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser(prog=argv[0], description="Submit transactions to Steem")
     parser.add_argument("-t", "--testserver", default="http://127.0.0.1:8190", dest="testserver", metavar="URL", help="Specify testnet steemd server with debug enabled")
-    parser.add_argument("-txb", "--transactions_per_block", default="-1", dest="transactions_per_block", metavar="Number", type=int, help="The number of transactions to send before triggering block production with the 'wait_block' operation")
+    parser.add_argument("-txb", "--transactions_per_block", default="40", dest="transactions_per_block", metavar="Number", type=int, help="The number of transactions to send before triggering block production with the 'wait_block' operation")
     parser.add_argument("--signer", default="sign_transaction", dest="sign_transaction_exe", metavar="FILE", help="Specify path to sign_transaction tool")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")
     parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
@@ -153,17 +155,17 @@ def main(argv):
         chain_id = None
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
-    transaction_count = -1
+    transaction_count = 0
     for line in input_file:
         line = line.strip()
         cmd, args = json.loads(line)
 
         try:
-            if cmd == "wait_blocks" :
-                if args.transactions_per_block == -1 :
-                    generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
-                    cached_dgpo.reset()
-            elif cmd == "submit_transaction":
+#            if cmd == "wait_blocks" :
+#                if args.transactions_per_block == -1 :
+#                    generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+# it's                    cached_dgpo.reset()
+            if cmd == "submit_transaction":
                 transaction_count += 1;
                 tx = args["tx"]
                 dgpo = cached_dgpo.get()
@@ -189,10 +191,9 @@ def main(argv):
                 tx["signatures"] = sigs
                 print("bcast:", json.dumps(tx, separators=(",", ":")))
                 steemd.network_broadcast_api.broadcast_transaction(trx=tx)
-            elif cmd == "transaction_count" and transaction_count == -1 and args.transactions_per_block > 0:
+            elif cmd == "transaction_count":
                 #If our args include 'transactions_per_block' we're expecting a snapshot that includes the number of transactions
                 #That means we can calculate the start time 'on the fly' and get *very* close to a real-time transition to normal block production
-                transaction_count = 0
                 genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
                 transaction_start_seconds = int(datetime.datetime.utcnow().total_seconds()) - ((args.count // args.transactions_per_block) * STEEM_BLOCK_INTERVAL)
                 miss_blocks = {'count' : (transaction_start_seconds - genesis_time) // STEEM_BLOCK_INTERVAL }

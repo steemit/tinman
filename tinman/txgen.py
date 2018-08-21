@@ -9,6 +9,8 @@ import os
 import random
 import sys
 
+from . import const
+
 try:
     import ijson.backends.yajl2_cffi as ijson
     from cffi import FFI
@@ -312,23 +314,26 @@ def build_actions(conf, static_witness_key=True, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
     transaction_count = 0
 
-    yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
+    yield [const.SUBMIT_TRANSACTION, {"tx" : build_initminer_tx(conf, keydb)}]
     transaction_count += 1
     for b in util.batch(build_setup_transactions(conf, keydb, silent), conf["transactions_per_block"]):
         for tx in b:
-            yield ["submit_transaction", {"tx" : tx}]
+            yield [const.SUBMIT_TRANSACTION, {"tx" : tx}]
             transaction_count += 1
+    yield [const.BEGIN_WITNESS_TRANSITION, {}]
 
     for tx in update_witnesses(conf, keydb, "init", static_witness_key):
         transaction_count += 1
-        yield ["submit_transaction", {"tx" : tx}]
+        yield [const.SUBMIT_TRANSACTION, {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         transaction_count += 1
-        yield ["submit_transaction", {"tx" : tx}]
+        yield [const.SUBMIT_TRANSACTION, {"tx" : tx}]
+
+    yield [const.END_WITNESS_TRANSITION, {}]
 
     #for piping & compatibility with submit.py we need to move this to the top of the file (likely by using a tmp file
     # for all previous operations, and then appending the tmp to the final output file, of which this is the 1st line
-    yield ["transaction_count", {"count" : transaction_count}]
+    yield [const.TRANSACTION_COUNT, {"count" : transaction_count}]
 
     return
 
