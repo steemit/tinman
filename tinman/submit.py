@@ -15,7 +15,7 @@ import sys
 import time
 import traceback
 
-from . import util
+from . import const
 
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
@@ -156,6 +156,8 @@ def main(argv):
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
     transaction_count = 0
+    is_witness_transition_period = False
+
     for line in input_file:
         line = line.strip()
         cmd, args = json.loads(line)
@@ -165,7 +167,7 @@ def main(argv):
 #                if args.transactions_per_block == -1 :
 #                    generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
 # it's                    cached_dgpo.reset()
-            if cmd == "submit_transaction":
+            if cmd == const.SUBMIT_TRANSACTION:
                 transaction_count += 1;
                 tx = args["tx"]
                 dgpo = cached_dgpo.get()
@@ -191,7 +193,8 @@ def main(argv):
                 tx["signatures"] = sigs
                 print("bcast:", json.dumps(tx, separators=(",", ":")))
                 steemd.network_broadcast_api.broadcast_transaction(trx=tx)
-            elif cmd == "transaction_count":
+
+            elif cmd == const.TRANSACTION_COUNT:
                 #If our args include 'transactions_per_block' we're expecting a snapshot that includes the number of transactions
                 #That means we can calculate the start time 'on the fly' and get *very* close to a real-time transition to normal block production
                 genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
@@ -200,9 +203,20 @@ def main(argv):
                 miss_blocks = max(miss_blocks-1, 0)
                 generate_blocks(steemd, miss_blocks, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
 
-            if  args.transactions_per_block > 0 and (0 == transaction_count % args.transactions_per_block) :
+            elif cmd == const.BEGIN_WITNESS_TRANSITION:
                 generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
                 cached_dgpo.reset()
+                is_witness_transition_period = True
+
+            elif cmd == const.END_WITNESS_TRANSITION:
+                generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+                cached_dgpo.reset()
+                is_witness_transition_period = False
+
+            if  (not is_witness_transition_period) and (0 == transaction_count % args.transactions_per_block) :
+                generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+                cached_dgpo.reset()
+
         except Exception as e:
             fail_file.write(json.dumps([cmd, args, str(e)])+"\n")
             fail_file.flush()

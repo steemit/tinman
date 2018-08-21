@@ -9,7 +9,7 @@ import os
 import random
 import sys
 
-from . import const
+
 
 try:
     import ijson.backends.yajl2_cffi as ijson
@@ -18,7 +18,8 @@ try:
 except ImportError:
     import ijson
     YAJL2_CFFI_AVAILABLE = False
-    
+
+from . import const
 from . import prockey
 from . import util
 
