@@ -22,6 +22,7 @@ from . import util
 
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
+STATIC_PUBLIC_KEY = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
 
 def create_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
@@ -70,12 +71,12 @@ def vote_accounts(conf, keydb, elector, elected):
         yield {"operations" : ops, "wif_sigs" : [keydb.get_privkey(er_name)]}
     return
 
-def update_witnesses(conf, keydb, name, gapless=True):
+def update_witnesses(conf, keydb, name, static_witness_key=False):
     desc = conf["accounts"][name]
     for index in range(desc["count"]):
         name = desc["name"].format(index=index)
-        if gapless:
-          block_signing_key = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+        if static_witness_key:
+          block_signing_key = STATIC_PUBLIC_KEY
         else:
           block_signing_key = keydb.get_pubkey(name, 'block')
         yield {"operations" : [{"type" : "witness_update_operation", "value" : {
@@ -307,7 +308,7 @@ def port_snapshot(conf, keydb, silent=True):
     snapshot_file.close()
     return
 
-def build_actions(conf, gapless=True, silent=True):
+def build_actions(conf, static_witness_key=True, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
     transaction_count = 0
     start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
@@ -315,23 +316,19 @@ def build_actions(conf, gapless=True, silent=True):
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
 
-    yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
     transaction_count += 1
     for b in util.batch(build_setup_transactions(conf, keydb, silent), conf["transactions_per_block"]):
-        yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
             transaction_count += 1
 
-    for tx in update_witnesses(conf, keydb, "init", gapless):
+    for tx in update_witnesses(conf, keydb, "init", static_witness_key):
         transaction_count += 1
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         transaction_count += 1
         yield ["submit_transaction", {"tx" : tx}]
-    if gapless:
-      yield ["wait_blocks", {"count" : 1000000000}]
 
     #for piping & compatibility with submit.py we need to move this to the top of the file (likely by using a tmp file
     # for all previous operations, and then appending the tmp to the final output file, of which this is the 1st line
@@ -342,7 +339,7 @@ def build_actions(conf, gapless=True, silent=True):
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="", dest="conffile", metavar="FILE", help="Specify configuration file")
-    parser.add_argument("--gapless", dest="gapless", action="store_true", help="Append final actions of empty blocks - used for gap free startup")
+    parser.add_argument("-swk","--static-witness-public-key", dest="static_witness_key", action="store_true", help="Append final actions of empty blocks - used for gap free startup")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
@@ -356,7 +353,7 @@ def main(argv):
 
     #build the actions list (building before writing so we can know the count and prepend it)
     actions = []
-    for action in build_actions(conf, args.gapless, args.outfile == "-"):
+    for action in build_actions(conf, args.static_witness_key, args.outfile == "-"):
         actions.append(action)
 
     #the last action is the transaction_count, which we need to be at the beginning of the output for submit.py
