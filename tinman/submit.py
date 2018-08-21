@@ -194,8 +194,7 @@ def main(argv):
                 #That means we can calculate the start time 'on the fly' and get *very* close to a real-time transition to normal block production
                 transaction_count = 0
                 genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
-                bootstrap_completion_target_time = (datetime.datetime.utcnow() + datetime.timedelta(minutes = 15))
-                transaction_start_seconds = int(bootstrap_completion_target_time.total_seconds()) - ((args.count // args.transactions_per_block) * STEEM_BLOCK_INTERVAL)
+                transaction_start_seconds = int(datetime.datetime.utcnow().total_seconds()) - ((args.count // args.transactions_per_block) * STEEM_BLOCK_INTERVAL)
                 miss_blocks = {'count' : (transaction_start_seconds - genesis_time) // STEEM_BLOCK_INTERVAL }
                 miss_blocks = max(miss_blocks-1, 0)
                 generate_blocks(steemd, miss_blocks, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
