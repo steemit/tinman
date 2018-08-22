@@ -22,6 +22,7 @@ from . import util
 
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
+NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 
 def create_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
@@ -324,6 +325,7 @@ def build_actions(conf, silent=True):
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         yield ["submit_transaction", {"tx" : tx}]
 
+    yield ["wait_blocks", {"count" : NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND, "miss_blocks" : miss_blocks}]
     return
 
 def main(argv):
