@@ -115,6 +115,7 @@ def main(argv):
     parser.add_argument("--signer", default="sign_transaction", dest="sign_transaction_exe", metavar="FILE", help="Specify path to sign_transaction tool")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read transactions from")
     parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
+    parser.add_argument("-n", "--chain-name", default="", dest="chain_name", metavar="CN", help="Specify chain name")
     parser.add_argument("-c", "--chain-id", default="", dest="chain_id", metavar="CID", help="Specify chain ID")
     parser.add_argument("--timeout", default=5.0, type=float, dest="timeout", metavar="SECONDS", help="API timeout")
     parser.add_argument("--realtime", dest="realtime", action="store_true", help="Wait when asked to produce blocks in the future")
@@ -143,10 +144,13 @@ def main(argv):
 
     cached_dgpo = CachedDgpo(steemd=steemd)
 
-    if args.chain_id != "":
-        chain_id = args.chain_id
+    if args.chain_name != "":
+        chain_id = hashlib.sha256(args.chain_name.strip()).digest().hex()
     else:
         chain_id = None
+
+    if args.chain_id != "":
+        chain_id = args.chain_id.strip()
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
 
