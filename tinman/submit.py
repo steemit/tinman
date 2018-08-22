@@ -144,7 +144,7 @@ def main(argv):
     cached_dgpo = CachedDgpo(steemd=steemd)
 
     if args.chain_id != "":
-        chain_id = hashlib.sha256(args.chain_id).digest()
+        chain_id = args.chain_id
     else:
         chain_id = None
 
