@@ -150,7 +150,7 @@ def main(argv):
         chain_id = None
 
     if args.chain_id != "":
-        chain_id = args.chain_id
+        chain_id = args.chain_id.strip()
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
 
