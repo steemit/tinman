@@ -26,12 +26,12 @@ def repack_operations(conf, keydb, min_block, max_block):
     steemd = SteemInterface(backend)
     min_block = int(conf["min_block_number"]) if min_block == 0 else min_block
     max_block = int(conf["max_block_number"]) if max_block == 0 else max_block
-    ported_operations = set(conf["ported_operations"])
-    tx_signer = conf["transaction_signer"]
+    ported_operations = conf["ported_operations"]
+    ported_types = set([op["type"] for op in ported_operations])
     """ Positive value of max_block means get from [min_block_number,max_block_number) range and stop """
     if max_block > 0: 
-        for op in util.iterate_operations_from(steemd, is_appbase, min_block, max_block, ported_operations):
-            yield {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer)]}
+        for op in util.iterate_operations_from(steemd, is_appbase, min_block, max_block, ported_types):
+            yield op_for_role(op, conf, keydb, ported_operations)
         return
     """
     Otherwise get blocks from min_block_number to current head and again
@@ -45,10 +45,37 @@ def repack_operations(conf, keydb, min_block, max_block):
             time.sleep(1) # Theoretically 3 seconds, but most probably we won't have to wait that long.
             dgpo = steemd.database_api.get_dynamic_global_properties()
             new_head_block = dgpo["head_block_number"]
-        for op in util.iterate_operations_from(steemd, is_appbase, old_head_block, new_head_block, ported_operations):
-            yield {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer)]}
+        for op in util.iterate_operations_from(steemd, is_appbase, old_head_block, new_head_block, ported_types):
+            yield op_for_role(op, conf, keydb, ported_operations)
         old_head_block = new_head_block
     return
+
+def op_for_role(op, conf, keydb, ported_operations):
+    """
+    Here, we match the role with the op type.  For certain types, there's more
+    to do than just grab the one and only appropriate role.
+    """
+    tx_signer = conf["transaction_signer"]
+    
+    for ported_op in ported_operations:
+        if ported_op["type"] == op["type"]:
+            roles = ported_op["roles"]
+    
+    if roles and len(roles) == 1:
+        # It's a trivial role that know about right in config.
+        return {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer, roles[0])]}
+    else:
+        # custom_json_operation is usually posting, but sometimes there's an elevated role.
+        if op["type"] in ["custom_json_operation", "custom_binary_operation", "custom_operation"]:
+            if len(op["value"]["required_posting_auths"]) > 0:
+                # The role is "posting" because required_posting_auths has keys.
+                return {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer, "posting")]}
+            else:
+                # Assume "active" because there's nothing in required_posting_auths.
+                return {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer, "active")]}
+        else:
+            # Assume it's "active" as a fallback.
+            return {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer, "active")]}
 
 def build_actions(conf, min_block, max_block):
     """
@@ -56,10 +83,8 @@ def build_actions(conf, min_block, max_block):
     """
     keydb = prockey.ProceduralKeyDatabase()
     for b in util.batch(repack_operations(conf, keydb, min_block, max_block), conf["transactions_per_block"]):
-        yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
-    yield ["wait_blocks", {"count" : 50}]
     return
 
 def main(argv):
