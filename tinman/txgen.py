@@ -323,7 +323,6 @@ def build_actions(conf, silent=True):
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         yield ["submit_transaction", {"tx" : tx}]
-    yield ["wait_blocks", {"count" : 1000000000}]
 
     return
 
