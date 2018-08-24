@@ -172,6 +172,18 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
+# Warden
+
+Use `warden` to check the current condition of a given chain.  It does some
+basic checks to make sure the chain is up and running, then returns error codes.
+
+Returning error code zero (0) means everything looks good.  Non-zero means
+something is amiss.
+
+```
+tinman warden -s http://127.0.0.1:8090 && echo LGTM || echo Bummer.
+```
+
 # Gatling transactions from mainnet
 
 Populating the test network with transactions from the main network.

@@ -9,6 +9,7 @@ from . import gatling
 from . import keysub
 from . import sample
 from . import submit
+from . import warden
 
 class Help(object):
 
@@ -27,6 +28,7 @@ commands = collections.OrderedDict((
             ("keysub"  , keysub  ),
             ("sample"  , sample  ),
             ("submit"  , submit  ),
+            ("warden"  , warden  ),
             ("help"    , Help    ),
            ))
 
