@@ -2,3 +2,7 @@
 *~*
 *#*
 py3env
+dist
+build
+*.egg*
+
