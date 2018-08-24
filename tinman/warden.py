@@ -5,6 +5,9 @@ import datetime
 
 from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
+PREFLIGHT_GO = 'go'
+PREFLIGHT_NOGO = 'nogo'
+
 def main(argv):
     """
     Checks basic node suitability for gatling phase.
@@ -27,20 +30,20 @@ def main(argv):
     
     if config["IS_TEST_NET"]:
         print("[√] testnet: true")
-        passfail.append('go')
+        passfail.append(PREFLIGHT_GO)
     else:
         print("[X] testnet: false")
-        passfail.append('nogo')
+        passfail.append(PREFLIGHT_NOGO)
     
     if diff < 0:
         print("[X] head block time: %s seconds into the future" % abs(diff))
-        passfail.append('nogo')
+        passfail.append(PREFLIGHT_NOGO)
     elif diff - block_interval > 0:
         print("[X] head block time: %s seconds behind" % diff)
-        passfail.append('nogo')
+        passfail.append(PREFLIGHT_NOGO)
     else:
         print("[√] head block time: within %s seconds" % block_interval)
-        passfail.append('go')
+        passfail.append(PREFLIGHT_GO)
     
     witness_schedule = steemd.database_api.get_witness_schedule(x=None)
     witnesses = witness_schedule["current_shuffled_witnesses"]
@@ -48,27 +51,27 @@ def main(argv):
     
     if initminer not in witnesses:
         print("[√] witnesses: %s not present" % initminer)
-        passfail.append('go')
+        passfail.append(PREFLIGHT_GO)
     else:
         print("[X] witnesses: %s present" % initminer)
-        passfail.append('nogo')
+        passfail.append(PREFLIGHT_NOGO)
     
     scheduled_witnesses = witness_schedule["num_scheduled_witnesses"]
     
     if scheduled_witnesses == config["STEEM_MAX_WITNESSES"]:
         print("[√] scheduled witnesses: %s" % config["STEEM_MAX_WITNESSES"])
-        passfail.append('go')
+        passfail.append(PREFLIGHT_GO)
     else:
         print("[X] scheduled witnesses: %s" % scheduled_witnesses)
-        passfail.append('nogo')
+        passfail.append(PREFLIGHT_NOGO)
     
     majority_version = witness_schedule["majority_version"]
     
     if majority_version == '0.0.0':
         print("[X] majority version: 0.0.0")
-        passfail.append('nogo')
+        passfail.append(PREFLIGHT_NOGO)
     else:
         print("[√] majority version: %s" % majority_version)
-        passfail.append('go')
+        passfail.append(PREFLIGHT_GO)
     
-    exit('nogo' in passfail) # Also tell the caller everything is ok.
+    exit(PREFLIGHT_NOGO in passfail) # Also tell the caller everything is ok.
