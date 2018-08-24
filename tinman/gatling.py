@@ -4,10 +4,20 @@ import argparse
 import json
 import sys
 import time
-from simple_steem_client.client import SteemRemoteBackend, SteemInterface
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface, SteemRPCException
 
 from . import prockey
 from . import util
+
+# Whitelist of exceptions from transaction source (Mainnet).
+TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
+  "Unable to acquire database lock",
+  "Internal Error",
+  "Server error",
+  "Upstream response error"
+]
+
+MAX_RETRY = 30
 
 def str2bool(str_arg):
     """
@@ -82,9 +92,32 @@ def build_actions(conf, min_block, max_block):
     Packs transactions rebuilt with operations acquired from source node into blocks of configured size.
     """
     keydb = prockey.ProceduralKeyDatabase()
-    for b in util.batch(repack_operations(conf, keydb, min_block, max_block), conf["transactions_per_block"]):
-        for tx in b:
-            yield ["submit_transaction", {"tx" : tx}]
+    retry_count = 0
+    
+    while True:
+        retry_count += 1
+        
+        try:
+            for b in util.batch(repack_operations(conf, keydb, min_block, max_block), conf["transactions_per_block"]):
+                for tx in b:
+                    yield ["submit_transaction", {"tx" : tx}]
+                    retry_count = 0
+            break
+        except SteemRPCException as e:
+            cause = e.args[0]["error"]
+            message = cause["message"]
+            data = cause["data"]
+            retry = False
+            
+            if message in TRANSACTION_SOURCE_RETRYABLE_ERRORS:
+                retry = True
+            
+            if retry and retry_count < MAX_RETRY:
+                print("Recovered (tries: %s): %s" % (retry_count, message), file=sys.stderr)
+                if data:
+                    print(json.dumps(data, indent=2), file=sys.stderr)
+            else:
+                raise e
     return
 
 def main(argv):
