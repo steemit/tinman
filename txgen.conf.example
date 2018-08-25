@@ -3,8 +3,6 @@
 
  "snapshot_file" : "snapshot.json",
 
- "start_time" : "2018-01-24T12:00:00",
-
  "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
  "total_port_balance" : {"amount" : "200000000000", "precision" : 3, "nai" : "@@000000021"},
 

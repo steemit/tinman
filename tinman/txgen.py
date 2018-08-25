@@ -86,12 +86,12 @@ def update_witnesses(conf, keydb, name):
            "wif_sigs" : [keydb.get_privkey(name)]}
     return
 
-def build_setup_transactions(conf, keydb, silent=True):
+def build_setup_transactions(stats, conf, keydb, silent=True):
     yield from create_accounts(conf, keydb, "init")
     yield from create_accounts(conf, keydb, "elector")
     yield from create_accounts(conf, keydb, "manager")
     yield from create_accounts(conf, keydb, "porter")
-    yield from port_snapshot(conf, keydb, silent)
+    yield from port_snapshot(stats, conf, keydb, silent)
 
 def build_initminer_tx(conf, keydb):
     return {"operations" : [
@@ -132,19 +132,17 @@ def get_system_account_names(conf):
             yield name
     return
 
-def port_snapshot(conf, keydb, silent=True):
+def account_stats(conf, silent=True):
+    system_account_names = set(get_system_account_names(conf))
+    snapshot_file = open(conf["snapshot_file"], "rb")
     total_vests = 0
     total_steem = 0
-
-    system_account_names = set(get_system_account_names(conf))
-
+    num_accounts = 0
+    account_names = set()
+    
     if not silent and not YAJL2_CFFI_AVAILABLE:
         print("Warning: could not load yajl, falling back to default backend for ijson.")
-
-    snapshot_file = open(conf["snapshot_file"], "rb")
-
-    account_names = set()
-    num_accounts = 0
+    
     for acc in ijson.items(snapshot_file, "accounts.item"):
         if acc["name"] in system_account_names:
             continue
@@ -158,13 +156,30 @@ def port_snapshot(conf, keydb, silent=True):
             if num_accounts % 100000 == 0:
                 print("Accounts read:", num_accounts)
     
+    snapshot_file.close()
+    
+    return {
+      "account_names": account_names,
+      "total_vests": total_vests,
+      "total_steem": total_steem,
+      "num_accounts": num_accounts
+    }
+
+def port_snapshot(stats, conf, keydb, silent=True):
+    system_account_names = set(get_system_account_names(conf))
+    account_names = stats["account_names"]
+    total_vests = stats["total_vests"]
+    total_steem = stats["total_steem"]
+    num_accounts = stats["num_accounts"]
+
+    snapshot_file = open(conf["snapshot_file"], "rb")
+
     # We have a fixed amount of STEEM to give out, specified by total_port_balance
     # This needs to be given out subject to the following constraints:
     # - The ratio of vesting : liquid STEEM is the same on testnet,
     # - Everyone's testnet balance is proportional to their mainnet balance
     # - Everyone has at least min_vesting_per_account
 
-    snapshot_file.seek(0)
     for prefix, event, value in ijson.parse(snapshot_file):
         if prefix == "dynamic_global_properties.total_vesting_fund_steem.amount":
             total_vesting_steem = int(value)
@@ -307,15 +322,35 @@ def port_snapshot(conf, keydb, silent=True):
 
 def build_actions(conf, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
-
-    start_time = datetime.datetime.strptime(conf["start_time"], "%Y-%m-%dT%H:%M:%S")
+    stats_start = datetime.datetime.utcnow()
+    stats = account_stats(conf, silent)
+    stats_elapsed = datetime.datetime.utcnow() - stats_start
+    num_accounts = stats["num_accounts"]
+    transactions_per_block = conf["transactions_per_block"]
+    
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
+    
+    # Two transactions per account (create and update).
+    predicted_transaction_count = num_accounts * 2
+    
+    # The predicted number of blocks for accounts.
+    predicted_block_count = predicted_transaction_count // transactions_per_block
+    
+    # The number of seconds required to setup transactions is a multiple of
+    # the initial time it takes to do the account_stats() call.
+    predicted_transaction_setup_seconds = (stats_elapsed.seconds * 2)
+    
+    # Pad for update witnesses, vote witnesses, clear rounds, and transaction
+    # setup processing time
+    predicted_block_count += 100 + (predicted_transaction_setup_seconds // 3)
+    
+    start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=predicted_block_count * 3)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
 
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
-    for b in util.batch(build_setup_transactions(conf, keydb, silent), conf["transactions_per_block"]):
+    for b in util.batch(build_setup_transactions(stats, conf, keydb, silent), transactions_per_block):
         yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
@@ -325,12 +360,12 @@ def build_actions(conf, silent=True):
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         yield ["submit_transaction", {"tx" : tx}]
 
-    yield ["wait_blocks", {"count" : NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND, "miss_blocks" : miss_blocks}]
+    yield ["wait_blocks", {"count" : NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND}]
     return
 
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
-    parser.add_argument("-c", "--conffile", default="", dest="conffile", metavar="FILE", help="Specify configuration file")
+    parser.add_argument("-c", "--conffile", default="txgen.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
