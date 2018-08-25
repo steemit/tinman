@@ -7,7 +7,7 @@ import json
 import sys
 import math
 
-def transform_amounts(op_value, ratio, conf):
+def transform_amounts(op_value, ratio, floor_satoshi=1):
     def intersection(a, b):
         c = [value for value in a if value in b]
         return c
@@ -24,22 +24,20 @@ def transform_amounts(op_value, ratio, conf):
         if field["amount"] == "0":
             continue
         
-        old_amount = field["amount"]
-        field["amount"] = str(math.floor(int(field["amount"]) * ratio))
+        new_amount = math.floor(int(field["amount"]) * ratio)
         
-        if field["amount"] < conf["minimum_amount_satoshi"]:
-            field["amount"] = conf["minimum_amount_satoshi"]
+        if new_amount < floor_satoshi:
+            new_amount = floor_satoshi
+        
+        field["amount"] = str(new_amount)
 
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Adjust amount fields by ratio")
-    parser.add_argument("-c", "--conffile", default="amountsub.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read actions from")
     parser.add_argument("-o", "--output-file", default="-", dest="output_file", metavar="FILE", help="File to write actions to")
     parser.add_argument("-r", "--ratio", default="1.0", dest="ratio", metavar="INT", help="Adjust amounts in op to ratio")
+    parser.add_argument("-f", "--floor-satoshi", default="1", dest="floor_satoshi", metavar="INT", help="Minimum amount after ratio is applied")
     args = parser.parse_args(argv[1:])
-    
-    with open(args.conffile, "r") as f:
-        conf = json.load(f)
     
     if args.output_file == "-":
         output_file = sys.stdout
@@ -67,7 +65,7 @@ def main(argv):
             continue
         
         for op in act_args["tx"]["operations"]:
-            transform_amounts(op["value"], ratio, conf)
+            transform_amounts(op["value"], ratio, int(args.floor_satoshi))
         
         transformed_line = json.dumps([act, act_args])
         
