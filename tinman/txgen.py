@@ -23,6 +23,7 @@ from . import util
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
 NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
+TRANSACTION_WITNESS_SETUP_PAD = 100
 
 def create_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
@@ -86,12 +87,12 @@ def update_witnesses(conf, keydb, name):
            "wif_sigs" : [keydb.get_privkey(name)]}
     return
 
-def build_setup_transactions(stats, conf, keydb, silent=True):
+def build_setup_transactions(account_stats, conf, keydb, silent=True):
     yield from create_accounts(conf, keydb, "init")
     yield from create_accounts(conf, keydb, "elector")
     yield from create_accounts(conf, keydb, "manager")
     yield from create_accounts(conf, keydb, "porter")
-    yield from port_snapshot(stats, conf, keydb, silent)
+    yield from port_snapshot(account_stats, conf, keydb, silent)
 
 def build_initminer_tx(conf, keydb):
     return {"operations" : [
@@ -132,7 +133,7 @@ def get_system_account_names(conf):
             yield name
     return
 
-def account_stats(conf, silent=True):
+def get_account_stats(conf, silent=True):
     system_account_names = set(get_system_account_names(conf))
     snapshot_file = open(conf["snapshot_file"], "rb")
     total_vests = 0
@@ -165,12 +166,12 @@ def account_stats(conf, silent=True):
       "num_accounts": num_accounts
     }
 
-def port_snapshot(stats, conf, keydb, silent=True):
+def port_snapshot(account_stats, conf, keydb, silent=True):
     system_account_names = set(get_system_account_names(conf))
-    account_names = stats["account_names"]
-    total_vests = stats["total_vests"]
-    total_steem = stats["total_steem"]
-    num_accounts = stats["num_accounts"]
+    account_names = account_stats["account_names"]
+    total_vests = account_stats["total_vests"]
+    total_steem = account_stats["total_steem"]
+    num_accounts = account_stats["num_accounts"]
 
     snapshot_file = open(conf["snapshot_file"], "rb")
 
@@ -322,10 +323,10 @@ def port_snapshot(stats, conf, keydb, silent=True):
 
 def build_actions(conf, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
-    stats_start = datetime.datetime.utcnow()
-    stats = account_stats(conf, silent)
-    stats_elapsed = datetime.datetime.utcnow() - stats_start
-    num_accounts = stats["num_accounts"]
+    account_stats_start = datetime.datetime.utcnow()
+    account_stats = get_account_stats(conf, silent)
+    account_stats_elapsed = datetime.datetime.utcnow() - account_stats_start
+    num_accounts = account_stats["num_accounts"]
     transactions_per_block = conf["transactions_per_block"]
     
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
@@ -337,20 +338,20 @@ def build_actions(conf, silent=True):
     predicted_block_count = predicted_transaction_count // transactions_per_block
     
     # The number of seconds required to setup transactions is a multiple of
-    # the initial time it takes to do the account_stats() call.
-    predicted_transaction_setup_seconds = (stats_elapsed.seconds * 2)
+    # the initial time it takes to do the get_account_stats() call.
+    predicted_transaction_setup_seconds = (account_stats_elapsed.seconds * 2)
     
     # Pad for update witnesses, vote witnesses, clear rounds, and transaction
     # setup processing time
-    predicted_block_count += 100 + (predicted_transaction_setup_seconds // 3)
+    predicted_block_count += TRANSACTION_WITNESS_SETUP_PAD + (predicted_transaction_setup_seconds // STEEM_BLOCK_INTERVAL)
     
-    start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=predicted_block_count * 3)
+    start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
 
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
-    for b in util.batch(build_setup_transactions(stats, conf, keydb, silent), transactions_per_block):
+    for b in util.batch(build_setup_transactions(account_stats, conf, keydb, silent), transactions_per_block):
         yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
