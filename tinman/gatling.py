@@ -30,12 +30,16 @@ def repack_operations(conf, keydb, min_block, max_block):
     Uses configuration file data to acquire operations from source node
     blocks/transactions and repack them in new transactions one to one.
     """
+    
     source_node = conf["transaction_source"]["node"]
     is_appbase = str2bool(conf["transaction_source"]["appbase"])
     backend = SteemRemoteBackend(nodes=[source_node], appbase=is_appbase)
     steemd = SteemInterface(backend)
-    min_block = int(conf["min_block_number"]) if min_block == 0 else min_block
-    max_block = int(conf["max_block_number"]) if max_block == 0 else max_block
+    dgpo = steemd.database_api.get_dynamic_global_properties()
+    
+    if min_block == 0:
+        min_block = dgpo["head_block_number"]
+    
     ported_operations = conf["ported_operations"]
     ported_types = set([op["type"] for op in ported_operations])
     """ Positive value of max_block means get from [min_block_number,max_block_number) range and stop """
@@ -123,8 +127,8 @@ def build_actions(conf, min_block, max_block):
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Port transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="gatling.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
-    parser.add_argument("-f", "--from_block", default=0, dest="min_block_num", metavar="INT", help="Stream from block_num")
-    parser.add_argument("-t", "--to_block", default=0, dest="max_block_num", metavar="INT", help="Stream to block_num")
+    parser.add_argument("-f", "--from_block", default=-1, dest="min_block_num", metavar="INT", help="Stream from block_num")
+    parser.add_argument("-t", "--to_block", default=-1, dest="max_block_num", metavar="INT", help="Stream to block_num")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
@@ -135,8 +139,17 @@ def main(argv):
         outfile = sys.stdout
     else:
         outfile = open(args.outfile, "w")
-
-    for action in build_actions(conf, int(args.min_block_num), int(args.max_block_num)):
+    
+    min_block_num = int(args.min_block_num)
+    max_block_num = int(args.max_block_num)
+    
+    if min_block_num == -1:
+        min_block_num = int(conf["min_block_number"])
+    
+    if max_block_num == -1:
+        max_block_num = int(conf["max_block_number"])
+    
+    for action in build_actions(conf, min_block_num, max_block_num):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 

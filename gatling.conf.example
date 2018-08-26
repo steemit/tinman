@@ -9,7 +9,7 @@
   "appbase" : "True"
  },
 
- "min_block_number" : "19199903",
+ "min_block_number" : "0",
  "max_block_number" : "0",
 
  "ported_operations" :
