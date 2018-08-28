@@ -184,6 +184,20 @@ something is amiss.
 tinman warden -s http://127.0.0.1:8090 && echo LGTM || echo Bummer.
 ```
 
+As an example, you can add `warden` to your deployment script to delay the next step until your seed node has synchronized with the initial bootstrap node.
+
+```bash
+while [[ $all_clear -ne 0 ]]
+do
+    tinman warden -s http://my-seed-node:8080
+    all_clear=$?
+    echo Waiting for warden to sound the all-clear.
+    sleep 60
+done
+
+echo Ready to proceed.
+```
+
 # Gatling transactions from mainnet
 
 Populating the test network with transactions from the main network.
