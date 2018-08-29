@@ -16,6 +16,19 @@ This repository contains utilities to create a testnet.
 
 # Installation
 
+## Linux
+
+```bash
+sudo apt-get install virtualenv python3 libyajl-dev git
+```
+
+## macOS
+
+```bash
+brew install python3 yajl
+pip3 install virtualenv
+```
+
 ## Creating a virtualenv
 
 In this step we create a virtualenv to isolate our project from the
@@ -24,7 +37,6 @@ modifying the `PATH` and the prompt of the current shell,
 by sourcing the `activate` script:
 
 ```
-sudo apt-get install virtualenv python3 libyajl-dev
 virtualenv -p $(which python3) ~/ve/tinman
 source ~/ve/tinman/bin/activate
 ```
@@ -39,7 +51,6 @@ mkdir -p ~/src
 cd ~/src
 git clone git@github.com:steemit/tinman
 cd tinman
-git submodule update --init --recursive
 pip install pipenv
 pipenv install
 pip install .
@@ -59,7 +70,44 @@ to allow `tinman` to run without the `virtualenv` being active.
 
 # Example usage
 
-This section contains a single large example.
+```bash
+# First, take a snapshot of all accounts on mainnet using your own local mainnet
+# node on port 8090.
+tinman snapshot -s http://127.0.0.1:8090 -o snapshot.json
+```
+
+Once the `snapshot.json` file has been created, copy `txgen.conf.example` to
+`txgen.conf`:
+
+* `snapshot_file` - make sure this is the same name as your new `snaptshot.json`
+
+```
+# Next, create actions.
+tinman txgen -c txgen.conf -o txgen.actions
+```
+
+```bash
+# Ports actions over to local bootstrap node on port 9990, with a secret
+# set to "xyz-"
+
+( \
+  echo '["set_secret", {"secret":"xyz-"}]' ; \
+  cat txgen.actions \
+) | \
+tinman keysub | \
+tinman submit --realtime -t http://127.0.0.1:9990 \
+  --signer steem/programs/util/sign_transaction \
+  -f fail.json \
+  -t 600
+```
+
+You have now bootstrapped your testnet and you can point your witnesses at this node to start seeding and signing blocks.
+
+To check the number of accounts created on the bootstrap node:
+
+```bash
+curl -s --data '{"jsonrpc":"2.0", "method":"condenser_api.get_account_count", "params":[], "id":1}' http://localhost:9990
+```
 
 ## Mainnet steemd
 
