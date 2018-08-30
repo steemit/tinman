@@ -26,7 +26,7 @@ NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 TRANSACTION_WITNESS_SETUP_PAD = 100
 DENOM = 10**12        # we need stupidly high precision because VESTS
 
-def create_accounts(conf, keydb, name):
+def create_system_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
     for index in range(desc.get("count", 1)):
         name = desc["name"].format(index=index)
@@ -89,10 +89,10 @@ def update_witnesses(conf, keydb, name):
     return
 
 def build_setup_transactions(account_stats, conf, keydb, silent=True):
-    yield from create_accounts(conf, keydb, "init")
-    yield from create_accounts(conf, keydb, "elector")
-    yield from create_accounts(conf, keydb, "manager")
-    yield from create_accounts(conf, keydb, "porter")
+    yield from create_system_accounts(conf, keydb, "init")
+    yield from create_system_accounts(conf, keydb, "elector")
+    yield from create_system_accounts(conf, keydb, "manager")
+    yield from create_system_accounts(conf, keydb, "porter")
     yield from port_snapshot(account_stats, conf, keydb, silent)
 
 def build_initminer_tx(conf, keydb):
@@ -210,16 +210,122 @@ def get_proportions(account_stats, conf, silent=True):
       "steem_conversion_factor": steem_conversion_factor
     }
 
-def port_snapshot(account_stats, conf, keydb, silent=True):
+def create_accounts(account_stats, conf, keydb, silent=True):
     system_account_names = set(get_system_account_names(conf))
-    account_names = account_stats["account_names"]
-    num_accounts = account_stats["num_accounts"]
     proportions = get_proportions(account_stats, conf, silent)
     min_vesting_per_account = proportions["min_vesting_per_account"]
     vest_conversion_factor = proportions["vest_conversion_factor"]
     steem_conversion_factor = proportions["steem_conversion_factor"]
+    num_accounts = account_stats["num_accounts"]
     porter = conf["accounts"]["porter"]["name"]
+    porter_wif = keydb.get_privkey("porter")
+    create_auth = {"account_auths" : [["porter", 1]], "key_auths" : [], "weight_threshold" : 1}
+    accounts_created = 0
+    
+    with open(conf["snapshot_file"], "rb") as f:
+        for a in ijson.items(f, "accounts.item"):
+            if a["name"] in system_account_names:
+                continue
+            
+            vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // DENOM
+            transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // DENOM
+            name = a["name"]
+
+            ops = [{"type" : "account_create_operation", "value" : {
+              "fee" : amount(max(vesting_amount, min_vesting_per_account)),
+              "creator" : porter,
+              "new_account_name" : name,
+              "owner" : create_auth,
+              "active" : create_auth,
+              "posting" : create_auth,
+              "memo_key" : "TST"+a["memo_key"][3:],
+              "json_metadata" : "",
+             }}]
+            if transfer_amount > 0:
+                ops.append({"type" : "transfer_operation", "value" : {
+                 "from" : porter,
+                 "to" : name,
+                 "amount" : amount(transfer_amount),
+                 "memo" : "Ported balance",
+                 }})
+            
+            accounts_created += 1
+            if not silent:
+                if accounts_created % 100000 == 0:
+                    print("Accounts created:", accounts_created)
+                    print("\t", '%.2f%% complete' % (accounts_created / num_accounts * 100.0))
+
+            yield {"operations" : ops, "wif_sigs" : [porter_wif]}
+            
+    if not silent:
+        print("Accounts created:", accounts_created)
+        print("\t100.00%% complete")
+
+def update_accounts(account_stats, conf, keydb, silent=True):
+    system_account_names = set(get_system_account_names(conf))
+    account_names = account_stats["account_names"]
+    num_accounts = account_stats["num_accounts"]
+    porter_wif = keydb.get_privkey("porter")
     tnman = conf["accounts"]["manager"]["name"]
+    accounts_updated = 0
+
+    with open(conf["snapshot_file"], "rb") as f:
+        for a in ijson.items(f, "accounts.item"):
+            if a["name"] in system_account_names:
+                continue
+            
+            cur_owner_auth = a["owner"]
+            new_owner_auth = cur_owner_auth.copy()
+            cur_active_auth = a["active"]
+            new_active_auth = cur_active_auth.copy()
+            cur_posting_auth = a["posting"]
+            new_posting_auth = cur_posting_auth.copy()
+            
+            # filter to only include existing accounts
+            for aw in cur_owner_auth["account_auths"]:
+                if (aw[0] not in account_names) or (aw[0] in system_account_names):
+                    new_owner_auth["account_auths"].remove(aw)
+            for aw in cur_active_auth["account_auths"]:
+                if (aw[0] not in account_names) or (aw[0] in system_account_names):
+                    new_active_auth["account_auths"].remove(aw)
+            for aw in cur_posting_auth["account_auths"]:
+                if (aw[0] not in account_names) or (aw[0] in system_account_names):
+                    new_posting_auth["account_auths"].remove(aw)
+
+            # add tnman to account_auths
+            new_owner_auth["account_auths"].append([tnman, cur_owner_auth["weight_threshold"]])
+            new_active_auth["account_auths"].append([tnman, cur_active_auth["weight_threshold"]])
+            new_posting_auth["account_auths"].append([tnman, cur_posting_auth["weight_threshold"]])
+            
+            # substitute prefix for key_auths
+            new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"]]
+            new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"]]
+            new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"]]
+
+            ops = [{"type" : "account_update_operation", "value" : {
+              "account" : a["name"],
+              "owner" : new_owner_auth,
+              "active" : new_active_auth,
+              "posting" : new_posting_auth,
+              "memo_key" : "TST"+a["memo_key"][3:],
+              "json_metadata" : a["json_metadata"],
+              }}]
+
+            accounts_updated += 1
+            if not silent:
+                if accounts_updated % 100000 == 0:
+                    print("Accounts updated:", accounts_updated)
+                    print("\t", '%.2f%% complete' % (accounts_updated / num_accounts * 100.0))
+            
+            yield {"operations" : ops, "wif_sigs" : [porter_wif]}
+    
+    if not silent:
+        print("Accounts updated:", accounts_updated)
+        print("\t100.00%% complete")
+
+def port_snapshot(account_stats, conf, keydb, silent=True):
+    system_account_names = set(get_system_account_names(conf))
+    porter = conf["accounts"]["porter"]["name"]
 
     yield {"operations" : [
       {"type" : "transfer_operation",
@@ -230,106 +336,9 @@ def port_snapshot(account_stats, conf, keydb, silent=True):
       }}],
        "wif_sigs" : [keydb.get_privkey("initminer")]}
 
-    porter_wif = keydb.get_privkey("porter")
-
-    create_auth = {"account_auths" : [["porter", 1]], "key_auths" : [], "weight_threshold" : 1}
-
-    snapshot_file = open(conf["snapshot_file"], "rb")
-    accounts_created = 0
-    for a in ijson.items(snapshot_file, "accounts.item"):
-        if a["name"] in system_account_names:
-            continue
-        
-        vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // DENOM
-        transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // DENOM
-        name = a["name"]
-
-        ops = [{"type" : "account_create_operation", "value" : {
-          "fee" : amount(max(vesting_amount, min_vesting_per_account)),
-          "creator" : porter,
-          "new_account_name" : name,
-          "owner" : create_auth,
-          "active" : create_auth,
-          "posting" : create_auth,
-          "memo_key" : "TST"+a["memo_key"][3:],
-          "json_metadata" : "",
-         }}]
-        if transfer_amount > 0:
-            ops.append({"type" : "transfer_operation", "value" : {
-             "from" : porter,
-             "to" : name,
-             "amount" : amount(transfer_amount),
-             "memo" : "Ported balance",
-             }})
-        
-        accounts_created += 1
-        if not silent:
-            if accounts_created % 100000 == 0:
-                print("Accounts created:", accounts_created)
-                print("\t", '%.2f%% complete' % (accounts_created / num_accounts * 100.0))
-
-        yield {"operations" : ops, "wif_sigs" : [porter_wif]}
-        
-    if not silent:
-        print("Accounts created:", accounts_created)
-        print("\t100.00%% complete")
-
-    snapshot_file.seek(0)
-    accounts_updated = 0
-    for a in ijson.items(snapshot_file, "accounts.item"):
-        if a["name"] in system_account_names:
-            continue
-        
-        cur_owner_auth = a["owner"]
-        new_owner_auth = cur_owner_auth.copy()
-        cur_active_auth = a["active"]
-        new_active_auth = cur_active_auth.copy()
-        cur_posting_auth = a["posting"]
-        new_posting_auth = cur_posting_auth.copy()
-        
-        # filter to only include existing accounts
-        for aw in cur_owner_auth["account_auths"]:
-            if (aw[0] not in account_names) or (aw[0] in system_account_names):
-                new_owner_auth["account_auths"].remove(aw)
-        for aw in cur_active_auth["account_auths"]:
-            if (aw[0] not in account_names) or (aw[0] in system_account_names):
-                new_active_auth["account_auths"].remove(aw)
-        for aw in cur_posting_auth["account_auths"]:
-            if (aw[0] not in account_names) or (aw[0] in system_account_names):
-                new_posting_auth["account_auths"].remove(aw)
-
-        # add tnman to account_auths
-        new_owner_auth["account_auths"].append([tnman, cur_owner_auth["weight_threshold"]])
-        new_active_auth["account_auths"].append([tnman, cur_active_auth["weight_threshold"]])
-        new_posting_auth["account_auths"].append([tnman, cur_posting_auth["weight_threshold"]])
-        
-        # substitute prefix for key_auths
-        new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"]]
-        new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"]]
-        new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"]]
-
-        ops = [{"type" : "account_update_operation", "value" : {
-          "account" : a["name"],
-          "owner" : new_owner_auth,
-          "active" : new_active_auth,
-          "posting" : new_posting_auth,
-          "memo_key" : "TST"+a["memo_key"][3:],
-          "json_metadata" : a["json_metadata"],
-          }}]
-
-        accounts_updated += 1
-        if not silent:
-            if accounts_updated % 100000 == 0:
-                print("Accounts updated:", accounts_updated)
-                print("\t", '%.2f%% complete' % (accounts_updated / num_accounts * 100.0))
-        
-        yield {"operations" : ops, "wif_sigs" : [porter_wif]}
+    yield from create_accounts(account_stats, conf, keydb, silent)
+    yield from update_accounts(account_stats, conf, keydb, silent)
     
-    if not silent:
-        print("Accounts updated:", accounts_updated)
-        print("\t100.00%% complete")
-
-    snapshot_file.close()
     return
 
 def build_actions(conf, silent=True):
