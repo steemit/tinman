@@ -138,7 +138,6 @@ def get_account_stats(conf, silent=True):
     system_account_names = set(get_system_account_names(conf))
     total_vests = 0
     total_steem = 0
-    num_accounts = 0
     account_names = set()
     
     if not silent and not YAJL2_CFFI_AVAILABLE:
@@ -152,17 +151,16 @@ def get_account_stats(conf, silent=True):
             account_names.add(acc["name"])
             total_vests += satoshis(acc["vesting_shares"])
             total_steem += satoshis(acc["balance"])
-            num_accounts += 1
 
             if not silent:
-                if num_accounts % 100000 == 0:
-                    print("Accounts read:", num_accounts)
+                n = len(account_names)
+                if n % 100000 == 0:
+                    print("Accounts read:", n)
     
     return {
       "account_names": account_names,
       "total_vests": total_vests,
-      "total_steem": total_steem,
-      "num_accounts": num_accounts
+      "total_steem": total_steem
     }
 
 def get_proportions(account_stats, conf, silent=True):
@@ -176,7 +174,8 @@ def get_proportions(account_stats, conf, silent=True):
     
     total_vests = account_stats["total_vests"]
     total_steem = account_stats["total_steem"]
-    num_accounts = account_stats["num_accounts"]
+    account_names = account_stats["account_names"]
+    num_accounts = len(account_names)
     
     with open(conf["snapshot_file"], "rb") as f:
         for prefix, event, value in ijson.parse(f):
@@ -216,7 +215,8 @@ def create_accounts(account_stats, conf, keydb, silent=True):
     min_vesting_per_account = proportions["min_vesting_per_account"]
     vest_conversion_factor = proportions["vest_conversion_factor"]
     steem_conversion_factor = proportions["steem_conversion_factor"]
-    num_accounts = account_stats["num_accounts"]
+    account_names = account_stats["account_names"]
+    num_accounts = len(account_names)
     porter = conf["accounts"]["porter"]["name"]
     porter_wif = keydb.get_privkey("porter")
     create_auth = {"account_auths" : [["porter", 1]], "key_auths" : [], "weight_threshold" : 1}
@@ -264,7 +264,7 @@ def create_accounts(account_stats, conf, keydb, silent=True):
 def update_accounts(account_stats, conf, keydb, silent=True):
     system_account_names = set(get_system_account_names(conf))
     account_names = account_stats["account_names"]
-    num_accounts = account_stats["num_accounts"]
+    num_accounts = len(account_names)
     porter_wif = keydb.get_privkey("porter")
     tnman = conf["accounts"]["manager"]["name"]
     accounts_updated = 0
@@ -324,7 +324,6 @@ def update_accounts(account_stats, conf, keydb, silent=True):
         print("\t100.00%% complete")
 
 def port_snapshot(account_stats, conf, keydb, silent=True):
-    system_account_names = set(get_system_account_names(conf))
     porter = conf["accounts"]["porter"]["name"]
 
     yield {"operations" : [
@@ -346,7 +345,8 @@ def build_actions(conf, silent=True):
     account_stats_start = datetime.datetime.utcnow()
     account_stats = get_account_stats(conf, silent)
     account_stats_elapsed = datetime.datetime.utcnow() - account_stats_start
-    num_accounts = account_stats["num_accounts"]
+    account_names = account_stats["account_names"]
+    num_accounts = len(account_names)
     transactions_per_block = conf["transactions_per_block"]
     
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
