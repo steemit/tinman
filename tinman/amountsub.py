@@ -14,7 +14,6 @@ def transform_amounts(object, ratio, floor_satoshi=1):
     
     if isinstance(object, list):
         for e in object:
-            print("e:", e)
             transform_amounts(e, ratio, floor_satoshi)
     elif isinstance(object, dict):
         for key in object.keys():
