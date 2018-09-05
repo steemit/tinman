@@ -25,6 +25,7 @@ STEEM_BLOCK_INTERVAL = 3
 NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 TRANSACTION_WITNESS_SETUP_PAD = 100
 DENOM = 10**12        # we need stupidly high precision because VESTS
+STEEM_MAX_ACCOUNT_CREATION_FEE = 1000000000
 
 def create_system_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
@@ -230,9 +231,11 @@ def create_accounts(account_stats, conf, keydb, silent=True):
             vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // DENOM
             transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // DENOM
             name = a["name"]
-
+            fee = max(vesting_amount, min_vesting_per_account)
+            fee = min(STEEM_MAX_ACCOUNT_CREATION_FEE, fee)
+            
             ops = [{"type" : "account_create_operation", "value" : {
-              "fee" : amount(max(vesting_amount, min_vesting_per_account)),
+              "fee" : amount(fee),
               "creator" : porter,
               "new_account_name" : name,
               "owner" : create_auth,
