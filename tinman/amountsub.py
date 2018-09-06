@@ -7,35 +7,39 @@ import json
 import sys
 import math
 
-def transform_amounts(op_value, ratio, floor_satoshi=1):
+def transform_amounts(object, ratio, floor_satoshi=1):
     def intersection(a, b):
         c = [value for value in a if value in b]
         return c
     
-    for key in op_value.keys():
-        field = op_value[key]
-        
-        if not isinstance(field, dict):
-            continue
-        
-        if len(intersection(["amount", "precision", "nai"], field.keys())) != 3:
-            continue
-        
-        if field["amount"] == "0":
-            continue
-        
-        new_amount = math.floor(int(field["amount"]) * ratio)
-        
-        if new_amount < floor_satoshi:
-            new_amount = floor_satoshi
-        
-        field["amount"] = str(new_amount)
+    if isinstance(object, list):
+        for e in object:
+            transform_amounts(e, ratio, floor_satoshi)
+    elif isinstance(object, dict):
+        for key in object.keys():
+            field = object[key]
+            
+            if not isinstance(field, dict):
+                transform_amounts(field, ratio, floor_satoshi)
+            elif len(intersection(["amount", "precision", "nai"], field.keys())) != 3:
+                transform_amounts(field, ratio, floor_satoshi)
+                continue
+            else:
+                if field["amount"] == "0":
+                    continue
+                
+                new_amount = math.floor(int(field["amount"]) * ratio)
+                
+                if new_amount < floor_satoshi:
+                    new_amount = floor_satoshi
+                
+                field["amount"] = str(new_amount)
 
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Adjust amount fields by ratio")
     parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read actions from")
     parser.add_argument("-o", "--output-file", default="-", dest="output_file", metavar="FILE", help="File to write actions to")
-    parser.add_argument("-r", "--ratio", default="1.0", dest="ratio", metavar="INT", help="Adjust amounts in op to ratio")
+    parser.add_argument("-r", "--ratio", default="1.0", dest="ratio", metavar="FLOAT", help="Adjust amounts in op to ratio")
     parser.add_argument("-f", "--floor-satoshi", default="1", dest="floor_satoshi", metavar="INT", help="Minimum amount after ratio is applied")
     args = parser.parse_args(argv[1:])
     
