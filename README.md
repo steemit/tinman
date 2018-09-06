@@ -103,7 +103,6 @@ Some notes about `tinman txgen`:
 - Balances are created by dividing `total_port_balance` proportionally among the live STEEM and vesting, subject to `min_vesting_per_account`.
 - Therefore, testnet balance is not equal to mainnet balance.  Rather, it is proportional to mainnet balance.
 - Accounts listed in `txgen.conf` are considered system accounts, any identically named account in the snapshot will not be ported
-- Passing `--gapless` to `txgen` will append final actions of empty blocks (right after creating witnesses) for gap free startup, see: [Running testnet witness node(s)](#running-testnet-witness-nodes).
 
 # Keys substitution
 
@@ -171,6 +170,32 @@ Therefore, `tinman submit` outsources signing of those transactions to the
 ) | \
 tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
+```
+
+# Warden
+
+Use `warden` to check the current condition of a given chain.  It does some
+basic checks to make sure the chain is up and running, then returns error codes.
+
+Returning error code zero (0) means everything looks good.  Non-zero means
+something is amiss.
+
+```
+tinman warden -s http://127.0.0.1:8090 && echo LGTM || echo Bummer.
+```
+
+As an example, you can add `warden` to your deployment script to delay the next step until your seed node has synchronized with the initial bootstrap node.
+
+```bash
+while [[ $all_clear -ne 0 ]]
+do
+    tinman warden -s http://my-seed-node:8080
+    all_clear=$?
+    echo Waiting for warden to sound the all-clear.
+    sleep 60
+done
+
+echo Ready to proceed.
 ```
 
 # Gatling transactions from mainnet
