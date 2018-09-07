@@ -4,7 +4,7 @@
  "snapshot_file" : "snapshot.json",
 
  "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
- "total_port_balance" : {"amount" : "400000000000", "precision" : 3, "nai" : "@@000000021"},
+ "total_port_balance" : {"amount" : "200000000000", "precision" : 3, "nai" : "@@000000021"},
 
  "accounts" :
  {
