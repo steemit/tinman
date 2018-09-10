@@ -137,7 +137,7 @@ def get_system_account_names(conf):
 
 def get_account_stats(conf, silent=True):
     system_account_names = set(get_system_account_names(conf))
-    total_vests = 0
+    vests = list()
     total_steem = 0
     account_names = set()
     
@@ -150,7 +150,7 @@ def get_account_stats(conf, silent=True):
                 continue
             
             account_names.add(acc["name"])
-            total_vests += satoshis(acc["vesting_shares"])
+            vests.append(satoshis(acc["vesting_shares"]))
             total_steem += satoshis(acc["balance"])
 
             if not silent:
@@ -158,9 +158,21 @@ def get_account_stats(conf, silent=True):
                 if n % 100000 == 0:
                     print("Accounts read:", n)
     
+    initial_account_stats = {
+      "account_names": account_names,
+      "total_vests": sum(vests),
+      "total_steem": total_steem
+    }
+    
+    proportions = get_proportions(initial_account_stats, conf)
+    max_vests_per_account = proportions["max_vests_per_account"]
+    
+    for(i, v) in enumerate(vests):
+        vests[i] = min(max_vests_per_account, v)
+    
     return {
       "account_names": account_names,
-      "total_vests": total_vests,
+      "total_vests": sum(vests),
       "total_steem": total_steem
     }
 
@@ -193,6 +205,7 @@ def get_proportions(account_stats, conf, silent=True):
     total_port_liquid = (avail_port_balance * total_steem) // (total_steem + total_vesting_steem)
     vest_conversion_factor  = (DENOM * total_port_vesting) // total_vests
     steem_conversion_factor = (DENOM * total_port_liquid ) // total_steem
+    max_vests_per_account = int(STEEM_MAX_ACCOUNT_CREATION_FEE / vest_conversion_factor * DENOM)
     
     if not silent:
         print("total_vests:", total_vests)
@@ -206,6 +219,7 @@ def get_proportions(account_stats, conf, silent=True):
     
     return {
       "min_vesting_per_account": min_vesting_per_account,
+      "max_vests_per_account": max_vests_per_account,
       "vest_conversion_factor": vest_conversion_factor,
       "steem_conversion_factor": steem_conversion_factor
     }
