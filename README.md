@@ -172,6 +172,21 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
+# Durables
+
+For consistency across testnet deployments, fixture-like object that must exist for external testing are recreated by the `durables` module.
+
+Copy `durables.conf.example` to `durables.conf`, add any desired objects, and run (typically after initial bootstrap and before `gatling`):
+
+```
+( \
+  echo '["set_secret", {"secret":"xyz-"}]' ; \
+  tinman durables -c durables.conf \
+) | \
+tinman keysub | \
+tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f die
+```
+
 # Warden
 
 Use `warden` to check the current condition of a given chain.  It does some
