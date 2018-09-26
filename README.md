@@ -34,10 +34,12 @@ source ~/ve/tinman/bin/activate
 The `tinman` source can be checked out with `git`.  This documentation
 assumes the source code lives in `~/src/tinman`:
 
+**Note:**`tinman`'s default branch is develop. `master` is condsidered stablish.
+
 ```
 mkdir -p ~/src
 cd ~/src
-git clone git@github.com:steemit/tinman
+git clone --branch master git@github.com:steemit/tinman
 cd tinman
 git submodule update --init --recursive
 pip install pipenv
