@@ -17,6 +17,7 @@ except ImportError:
     import ijson
     YAJL2_CFFI_AVAILABLE = False
     
+from . import __version__
 from . import prockey
 from . import util
 
@@ -382,10 +383,35 @@ def build_actions(conf, silent=True):
     # setup processing time
     predicted_block_count += TRANSACTION_WITNESS_SETUP_PAD + (predicted_transaction_setup_seconds // STEEM_BLOCK_INTERVAL)
     
-    start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
+    now = datetime.datetime.utcnow()
+    start_time = now - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
+    origin_api = None
+    snapshot_head_block_num = None
+    snapshot_semver = None
+    
+    metadata = {
+      "txgen:semver": __version__,
+      "txgen:transactions_per_block": transactions_per_block,
+      "epoch:created": str(now),
+      "actions:count": predicted_transaction_count,
+      "recommend:miss_blocks": miss_blocks
+    }
 
+    with open(conf["snapshot_file"], "rb") as f:
+        for prefix, event, value in ijson.parse(f):
+            if prefix == "metadata.snapshot:origin_api":
+                metadata["snapshot:origin_api"] = value
+            if prefix == "metadata.snapshot:semver":
+                metadata["snapshot:semver"] = value
+            if prefix == "dynamic_global_properties.head_block_number":
+                metadata["snapshot:head_block_num"] = value
+            
+            if not prefix == '' and not prefix.startswith("metadata") and not prefix.startswith("dynamic_global_properties"):
+                break
+    
+    yield ["metadata", metadata]
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
     for b in util.batch(build_setup_transactions(account_stats, conf, keydb, silent), transactions_per_block):
