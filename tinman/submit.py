@@ -153,13 +153,17 @@ def main(argv):
         chain_id = args.chain_id.strip()
 
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
+    metadata = None
 
     for line in input_file:
         line = line.strip()
         cmd, args = json.loads(line)
 
         try:
-            if cmd == "wait_blocks":
+            if cmd == "metadata":
+                metadata = args
+                print("metadata:", metadata)
+            elif cmd == "wait_blocks":
                 generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
                 cached_dgpo.reset()
             elif cmd == "submit_transaction":
