@@ -165,14 +165,18 @@ def main(argv):
         if metadata and transactions_count % transactions_per_block == 0:
             generate_blocks(steemd, {"count": 1}, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
             cached_dgpo.reset()
-            if cmd == "wait_blocks" and args["count"] == 1 and not args["miss_blocks"]:
+            if cmd == "wait_blocks" and args.get("count") == 1 and not args.get("miss_blocks"):
                 continue
         
         try:
             if cmd == "metadata":
                 metadata = args
+                transactions_per_block = metadata.get("txgen:transactions_per_block", transactions_per_block)
                 print("metadata:", metadata)
             elif cmd == "wait_blocks":
+                if metadata and args.get("count") == 1 and args.get("miss_blocks"):
+                    if args["miss_blocks"] < metadata["recommend:miss_blocks"]:
+                        args["miss_blocks"] = metadata["recommend:miss_blocks"]
                 generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
                 cached_dgpo.reset()
             elif cmd == "submit_transaction":
