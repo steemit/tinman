@@ -117,6 +117,7 @@ def main(argv):
     parser.add_argument("-f", "--fail-file", default="-", dest="fail_file", metavar="FILE", help="File to write failures, - for stdout, die to quit on failure")
     parser.add_argument("-n", "--chain-name", default="", dest="chain_name", metavar="CN", help="Specify chain name")
     parser.add_argument("-c", "--chain-id", default="", dest="chain_id", metavar="CID", help="Specify chain ID")
+    parser.add_argument("-tpb", "--transactions-per-block", default="40", dest="transactions_per_block", metavar="INT", help="Transactions per block (default: 40)")
     parser.add_argument("--timeout", default=5.0, type=float, dest="timeout", metavar="SECONDS", help="API timeout")
     parser.add_argument("--realtime", dest="realtime", action="store_true", help="Wait when asked to produce blocks in the future")
     args = parser.parse_args(argv[1:])
@@ -152,6 +153,8 @@ def main(argv):
     if args.chain_id != "":
         chain_id = args.chain_id.strip()
 
+    transactions_per_block = int(args.transactions_per_block)
+    transactions_count = 0
     signer = TransactionSigner(sign_transaction_exe=sign_transaction_exe, chain_id=chain_id)
     metadata = None
 
@@ -159,11 +162,21 @@ def main(argv):
         line = line.strip()
         cmd, args = json.loads(line)
 
+        if metadata and transactions_count > 0 and transactions_count % transactions_per_block == 0:
+            generate_blocks(steemd, {"count": 1}, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+            cached_dgpo.reset()
+            if cmd == "wait_blocks" and args.get("count") == 1 and not args.get("miss_blocks"):
+                continue
+        
         try:
             if cmd == "metadata":
                 metadata = args
+                transactions_per_block = metadata.get("txgen:transactions_per_block", transactions_per_block)
                 print("metadata:", metadata)
             elif cmd == "wait_blocks":
+                if metadata and args.get("count") == 1 and args.get("miss_blocks"):
+                    if args["miss_blocks"] < metadata["recommend:miss_blocks"]:
+                        args["miss_blocks"] = metadata["recommend:miss_blocks"]
                 generate_blocks(steemd, args, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
                 cached_dgpo.reset()
             elif cmd == "submit_transaction":
@@ -192,6 +205,7 @@ def main(argv):
                 print("bcast:", json.dumps(tx, separators=(",", ":")))
 
                 steemd.network_broadcast_api.broadcast_transaction(trx=tx)
+                transactions_count += 1
         except Exception as e:
             fail_file.write(json.dumps([cmd, args, str(e)])+"\n")
             fail_file.flush()
