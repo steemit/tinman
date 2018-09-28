@@ -17,6 +17,7 @@ except ImportError:
     import ijson
     YAJL2_CFFI_AVAILABLE = False
     
+from . import __version__
 from . import prockey
 from . import util
 
@@ -25,14 +26,13 @@ STEEM_BLOCK_INTERVAL = 3
 NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 TRANSACTION_WITNESS_SETUP_PAD = 100
 DENOM = 10**12        # we need stupidly high precision because VESTS
-STEEM_MAX_ACCOUNT_CREATION_FEE = 1000000000
 
 def create_system_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
     for index in range(desc.get("count", 1)):
         name = desc["name"].format(index=index)
         yield {"operations" : [{"type" : "account_create_operation", "value" : {
-            "fee" : desc["vesting"],
+            "fee" : {"amount" : "0", "precision" : 3, "nai" : "@@000000021"},
             "creator" : desc["creator"],
             "new_account_name" : name,
             "owner" : keydb.get_authority(name, "owner"),
@@ -40,8 +40,13 @@ def create_system_accounts(conf, keydb, name):
             "posting" : keydb.get_authority(name, "posting"),
             "memo_key" : keydb.get_pubkey(name, "memo"),
             "json_metadata" : "",
+           }}, {"type" : "transfer_to_vesting_operation", "value" : {
+            "from" : "initminer",
+            "to" : name,
+            "amount" : desc["vesting"],
            }}],
            "wif_sigs" : [keydb.get_privkey(desc["creator"])]}
+
     return
 
 def vote_accounts(conf, keydb, elector, elected):
@@ -137,7 +142,7 @@ def get_system_account_names(conf):
 
 def get_account_stats(conf, silent=True):
     system_account_names = set(get_system_account_names(conf))
-    vests = list()
+    vests = 0
     total_steem = 0
     account_names = set()
     
@@ -150,7 +155,7 @@ def get_account_stats(conf, silent=True):
                 continue
             
             account_names.add(acc["name"])
-            vests.append(satoshis(acc["vesting_shares"]))
+            vests += satoshis(acc["vesting_shares"])
             total_steem += satoshis(acc["balance"])
 
             if not silent:
@@ -158,21 +163,9 @@ def get_account_stats(conf, silent=True):
                 if n % 100000 == 0:
                     print("Accounts read:", n)
     
-    initial_account_stats = {
-      "account_names": account_names,
-      "total_vests": sum(vests),
-      "total_steem": total_steem
-    }
-    
-    proportions = get_proportions(initial_account_stats, conf)
-    max_vests_per_account = proportions["max_vests_per_account"]
-    
-    for(i, v) in enumerate(vests):
-        vests[i] = min(max_vests_per_account, v)
-    
     return {
       "account_names": account_names,
-      "total_vests": sum(vests),
+      "total_vests": vests,
       "total_steem": total_steem
     }
 
@@ -205,7 +198,6 @@ def get_proportions(account_stats, conf, silent=True):
     total_port_liquid = (avail_port_balance * total_steem) // (total_steem + total_vesting_steem)
     vest_conversion_factor  = (DENOM * total_port_vesting) // total_vests
     steem_conversion_factor = (DENOM * total_port_liquid ) // total_steem
-    max_vests_per_account = int(STEEM_MAX_ACCOUNT_CREATION_FEE / vest_conversion_factor * DENOM)
     
     if not silent:
         print("total_vests:", total_vests)
@@ -219,7 +211,6 @@ def get_proportions(account_stats, conf, silent=True):
     
     return {
       "min_vesting_per_account": min_vesting_per_account,
-      "max_vests_per_account": max_vests_per_account,
       "vest_conversion_factor": vest_conversion_factor,
       "steem_conversion_factor": steem_conversion_factor
     }
@@ -245,11 +236,10 @@ def create_accounts(account_stats, conf, keydb, silent=True):
             vesting_amount = (satoshis(a["vesting_shares"]) * vest_conversion_factor) // DENOM
             transfer_amount = (satoshis(a["balance"]) * steem_conversion_factor) // DENOM
             name = a["name"]
-            fee = max(vesting_amount, min_vesting_per_account)
-            fee = min(STEEM_MAX_ACCOUNT_CREATION_FEE, fee)
+            vesting_amount = max(vesting_amount, min_vesting_per_account)
             
             ops = [{"type" : "account_create_operation", "value" : {
-              "fee" : amount(fee),
+              "fee" : {"amount" : "0", "precision" : 3, "nai" : "@@000000021"},
               "creator" : porter,
               "new_account_name" : name,
               "owner" : create_auth,
@@ -257,6 +247,10 @@ def create_accounts(account_stats, conf, keydb, silent=True):
               "posting" : create_auth,
               "memo_key" : "TST"+a["memo_key"][3:],
               "json_metadata" : "",
+             }}, {"type" : "transfer_to_vesting_operation", "value" : {
+              "from" : porter,
+              "to" : name,
+              "amount" : amount(vesting_amount),
              }}]
             if transfer_amount > 0:
                 ops.append({"type" : "transfer_operation", "value" : {
@@ -368,8 +362,8 @@ def build_actions(conf, silent=True):
     
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
     
-    # Two transactions per account (create and update).
-    predicted_transaction_count = num_accounts * 2
+    # Three transactions per account (create, trasnfer_to_vesting, and update).
+    predicted_transaction_count = num_accounts * 3
     
     # The predicted number of blocks for accounts.
     predicted_block_count = predicted_transaction_count // transactions_per_block
@@ -382,10 +376,35 @@ def build_actions(conf, silent=True):
     # setup processing time
     predicted_block_count += TRANSACTION_WITNESS_SETUP_PAD + (predicted_transaction_setup_seconds // STEEM_BLOCK_INTERVAL)
     
-    start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
+    now = datetime.datetime.utcnow()
+    start_time = now - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
+    origin_api = None
+    snapshot_head_block_num = None
+    snapshot_semver = None
+    
+    metadata = {
+      "txgen:semver": __version__,
+      "txgen:transactions_per_block": transactions_per_block,
+      "epoch:created": str(now),
+      "actions:count": predicted_transaction_count,
+      "recommend:miss_blocks": miss_blocks
+    }
 
+    with open(conf["snapshot_file"], "rb") as f:
+        for prefix, event, value in ijson.parse(f):
+            if prefix == "metadata.snapshot:origin_api":
+                metadata["snapshot:origin_api"] = value
+            if prefix == "metadata.snapshot:semver":
+                metadata["snapshot:semver"] = value
+            if prefix == "dynamic_global_properties.head_block_number":
+                metadata["snapshot:head_block_num"] = value
+            
+            if not prefix == '' and not prefix.startswith("metadata") and not prefix.startswith("dynamic_global_properties"):
+                break
+    
+    yield ["metadata", metadata]
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
     for b in util.batch(build_setup_transactions(account_stats, conf, keydb, silent), transactions_per_block):
