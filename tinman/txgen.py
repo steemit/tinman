@@ -362,8 +362,8 @@ def build_actions(conf, silent=True):
     
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
     
-    # Two transactions per account (create and update).
-    predicted_transaction_count = num_accounts * 2
+    # Three transactions per account (create, trasnfer_to_vesting, and update).
+    predicted_transaction_count = num_accounts * 3
     
     # The predicted number of blocks for accounts.
     predicted_block_count = predicted_transaction_count // transactions_per_block
