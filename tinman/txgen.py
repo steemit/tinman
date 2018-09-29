@@ -25,6 +25,7 @@ STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
 NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 TRANSACTION_WITNESS_SETUP_PAD = 100
+STEEM_MAX_AUTHORITY_MEMBERSHIP = 10
 DENOM = 10**12        # we need stupidly high precision because VESTS
 
 def create_system_accounts(conf, keydb, name):
@@ -285,11 +286,11 @@ def update_accounts(account_stats, conf, keydb, silent=True):
             if a["name"] in system_account_names:
                 continue
             
-            cur_owner_auth = a["owner"]
+            cur_owner_auth = a["owner"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]
             new_owner_auth = cur_owner_auth.copy()
-            cur_active_auth = a["active"]
+            cur_active_auth = a["active"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]
             new_active_auth = cur_active_auth.copy()
-            cur_posting_auth = a["posting"]
+            cur_posting_auth = a["posting"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]
             new_posting_auth = cur_posting_auth.copy()
             
             # filter to only include existing accounts
