@@ -277,7 +277,9 @@ transition.
 To test `tinman`:
 
 ```bash
-$ python -m unittest
+$ cd test
+$ pip install ..
+$ python -m unittest $(git ls-files -m -o | grep "^.*\.py$")
 ```
 
 <img src="https://i.imgur.com/h57pDVE.png" width="25%" height="25%" />
