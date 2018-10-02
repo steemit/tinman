@@ -1,0 +1,109 @@
+{
+  "accounts": [
+    {
+      "name": "tn-one",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-two",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-three",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-four",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-five",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-six",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-seven",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-eight",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-adama",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-starbuck",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-baltar",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-boxey",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-boomer",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-apolo",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-hotdog",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-showboat",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-athena",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-racetrack",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-narcho",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-skulls",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-hex",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-husker",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-bulldog",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-chuckles",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-flattop",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }, {
+      "name": "tn-beano",
+      "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
+      "creator": "initminer"
+    }
+  ]
+}
