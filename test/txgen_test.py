@@ -4,7 +4,7 @@ import shutil
 from tinman import prockey
 from tinman import txgen
 
-class TestTxgen(unittest.TestCase):
+class TxgenTest(unittest.TestCase):
     def test_create_system_accounts_bad_args(self):
         self.assertRaises(TypeError, txgen.create_system_accounts)
     

@@ -4,7 +4,7 @@ from tinman import util
 
 from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
-class TestUtil(unittest.TestCase):
+class UtilTest(unittest.TestCase):
     def test_tag_escape_sequences(self):
         result = list(util.tag_escape_sequences('now "is" the time; "the hour" has "come"', '"'))
         expected_result = [('now ', False), ('is', True), (' the time; ', False), ('the hour', True), (' has ', False), ('come', True), ('', False)]
