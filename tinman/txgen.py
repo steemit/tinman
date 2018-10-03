@@ -286,21 +286,21 @@ def update_accounts(account_stats, conf, keydb, silent=True):
             if a["name"] in system_account_names:
                 continue
             
-            cur_owner_auth = a["owner"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]
+            cur_owner_auth = a["owner"]
             new_owner_auth = cur_owner_auth.copy()
-            cur_active_auth = a["active"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]
+            cur_active_auth = a["active"]
             new_active_auth = cur_active_auth.copy()
-            cur_posting_auth = a["posting"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]
+            cur_posting_auth = a["posting"]
             new_posting_auth = cur_posting_auth.copy()
             
             # filter to only include existing accounts
-            for aw in cur_owner_auth["account_auths"]:
+            for aw in cur_owner_auth["account_auths"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]:
                 if (aw[0] not in account_names) or (aw[0] in system_account_names):
                     new_owner_auth["account_auths"].remove(aw)
-            for aw in cur_active_auth["account_auths"]:
+            for aw in cur_active_auth["account_auths"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]:
                 if (aw[0] not in account_names) or (aw[0] in system_account_names):
                     new_active_auth["account_auths"].remove(aw)
-            for aw in cur_posting_auth["account_auths"]:
+            for aw in cur_posting_auth["account_auths"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]:
                 if (aw[0] not in account_names) or (aw[0] in system_account_names):
                     new_posting_auth["account_auths"].remove(aw)
 
