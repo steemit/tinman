@@ -52,10 +52,12 @@ The `ijson` requirement also uses `yajl` for performance improvements.  But `yaj
 The `tinman` source can be checked out with `git`.  This documentation
 assumes the source code lives in `~/src/tinman`:
 
+**Note:**`tinman`'s default branch is develop. `master` is condsidered stablish.
+
 ```bash
 $ mkdir -p ~/src
 $ cd ~/src
-$ git clone https://github.com/steemit/tinman.git
+$ git clone --branch master https://github.com/steemit/tinman.git
 $ cd tinman
 $ pip install pipenv
 $ pipenv install
