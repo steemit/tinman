@@ -272,4 +272,13 @@ long as a sufficient number of other witness nodes are timely producing blocks, 
 is not necessary to use these flags once 128 blocks have been produced after the
 transition.
 
+# Tests
+
+To test `tinman`:
+
+```bash
+$ cd test
+$ pip install .. && python -m unittest *_test.py
+```
+
 <img src="https://i.imgur.com/h57pDVE.png" width="25%" height="25%" />
