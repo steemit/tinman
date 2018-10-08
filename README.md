@@ -16,6 +16,19 @@ This repository contains utilities to create a testnet.
 
 # Installation
 
+## Linux
+
+```bash
+$ sudo apt-get install virtualenv python3 libyajl-dev git
+```
+
+## macOS
+
+```bash
+$ brew install python3 yajl
+$ pip3 install virtualenv
+```
+
 ## Creating a virtualenv
 
 In this step we create a virtualenv to isolate our project from the
@@ -23,11 +36,16 @@ system-wide Python installation.  The virtualenv is *activated*,
 modifying the `PATH` and the prompt of the current shell,
 by sourcing the `activate` script:
 
+```bash
+$ virtualenv -p $(which python3) ~/ve/tinman
+$ source ~/ve/tinman/bin/activate
 ```
-sudo apt-get install virtualenv python3 libyajl-dev
-virtualenv -p $(which python3) ~/ve/tinman
-source ~/ve/tinman/bin/activate
-```
+
+## Dependency Notes
+
+Tinman should work right out of the box, but on some more delicately configured machines, some users report `ijson` errors.  Running `pip install ijson` or `pip3 install ijson` should take care of that.
+
+The `ijson` requirement also uses `yajl` for performance improvements.  But `yajl` is optional and if it cannot be installed, there will be a warning that can be ignored.
 
 ## Using tinman
 
@@ -36,32 +54,87 @@ assumes the source code lives in `~/src/tinman`:
 
 **Note:**`tinman`'s default branch is develop. `master` is condsidered stablish.
 
-```
-mkdir -p ~/src
-cd ~/src
-git clone --branch master git@github.com:steemit/tinman
-cd tinman
-git submodule update --init --recursive
-pip install pipenv
-pipenv install
-pip install .
+```bash
+$ mkdir -p ~/src
+$ cd ~/src
+$ git clone --branch master https://github.com/steemit/tinman.git
+$ cd tinman
+$ pip install pipenv
+$ pipenv install
+$ pip install .
 ```
 
 If everything is set up correctly, you should be able to run commands
 such as `tinman --help` as follows:
 
-```
+```bash
 # Execute inside tinman virtualenv
-tinman --help
+$ tinman --help
 ```
 
 Note, the `tinman` script in `~/ve/tinman/bin/tinman` may be symlinked
 elsewhere (for example, `ln -s ~/ve/tinman/bin/tinman ~/bin/tinman`)
 to allow `tinman` to run without the `virtualenv` being active.
 
-# Example usage
+# Example Usage
 
-This section contains a single large example.
+```bash
+# First, take a snapshot of all accounts on mainnet using your own local mainnet
+# node on port 8090.
+$ tinman snapshot -s http://127.0.0.1:8090 -o snapshot.json
+```
+
+Once the `snapshot.json` file has been created, copy `txgen.conf.example` to
+`txgen.conf`:
+
+* `snapshot_file` - make sure this is the same name as your new `snaptshot.json`
+
+```bash
+# Next, create actions.
+$ tinman txgen -c txgen.conf -o txgen.actions
+```
+
+Create a bash script, call it `bootstrap.sh`, make sure the `--get-dev-key` and `--signer` arguments point to the correct binaries:
+
+```bash
+# Port the actions over to your local bootstrap node on port 9990, with a secret
+# set to "xyz-"
+( \
+  echo '["set_secret", {"secret":"xyz-"}]' ; \
+  cat txgen.actions \
+) | \
+tinman keysub --get-dev-key /path/to/steem/programs/util/get_dev_key | \
+tinman submit --realtime -t http://127.0.0.1:9990 \
+  --signer /path/to/steem/programs/util/sign_transaction \
+  -f fail.json \
+  -t 600
+```
+
+After allowing this script to run, you have now bootstrapped your testnet and you can point your witnesses at this node to start seeding and signing blocks.
+
+To check the number of accounts created on the bootstrap node:
+
+```bash
+$ curl -s --data '{"jsonrpc":"2.0", "method":"condenser_api.get_account_count", "params":[], "id":1}' http://localhost:9990
+```
+
+# Detailed Usage
+
+More detail about general usage:
+
+* [Mainnet steemd](#mainnet-steemde)
+* [Taking a snapshot](#taking-a-snapshot)
+* [Generating actions](#generating-actions)
+* [Keys substitution](#keys-substitution)
+  * [Deriving secret keys](#deriving-secret-keys)
+  * [Command-line key generator](#command-line-key-generator)
+* [Running testnet fastgen node](#running-testnet-fastgen-node)
+  * [Pipelining transactions to testnet](#pipelining-transactions-to-testnet)
+* [Durables](#durables)
+* [Warden](#warden)
+* [Gatling transactions from mainnet](#gatling-transactions-from-mainnet)
+* [Running testnet witness node(s)](#running-testnet-witness-node-s-)
+* [Tests](#tests)
 
 ## Mainnet steemd
 
@@ -74,28 +147,28 @@ First, we set up a `steemd` for the main network.  This `steemd` must be the fol
 
 ## Taking a snapshot
 
-```
-tinman snapshot -s http://127.0.0.1:8090 -o snapshot.json
+```bash
+$ tinman snapshot -s http://127.0.0.1:8090 -o snapshot.json
 ```
 
 As of this writing, the above command takes approximately 5 minutes, writing an approximately 2 GB JSON file with 1,000,000 lines.
 If you're running `tinman snapshot` interactively and you would like a visual progress indicator, you can install the `pv` program
 (`apt-get install pv`) and use it to display the output line count in real time:
 
-```
-tinman snapshot -s http://127.0.0.1:8090 | pv -l > snapshot.json
+```bash
+$ tinman snapshot -s http://127.0.0.1:8090 | pv -l > snapshot.json
 ```
 
-# Generating actions
+## Generating actions
 
 Now you can use `tinman txgen` to create a list of *actions*.  Actions include
 transactions which create and fund the accounts, and wait-for-block instructions
 which control the rate at which transactions occur:
 
-```
+```bash
 # As of this writing, this command takes ~10 minutes to start writing actions,
 # consumes ~200MB of RAM, with all actions created in about two hours
-tinman txgen -c txgen.conf -o tn.txlist
+$ tinman txgen -c txgen.conf -o tn.txlist
 ```
 
 Some notes about `tinman txgen`:
@@ -106,7 +179,7 @@ Some notes about `tinman txgen`:
 - Therefore, testnet balance is not equal to mainnet balance.  Rather, it is proportional to mainnet balance.
 - Accounts listed in `txgen.conf` are considered system accounts, any identically named account in the snapshot will not be ported
 
-# Keys substitution
+## Keys substitution
 
 To maintain separation of concerns in `tinman` tools, the `tinman txgen` tool
 does not directly generate transactions containing private keys (except
@@ -125,19 +198,19 @@ can be submitted to the network.  This is the role of the key substitution tool
 `tinman keysub`.  The `tinman keysub` tool takes as input a list of actions,
 generates the specified keys, and substitutes them into each action.
 
-## Deriving secret keys
+### Deriving secret keys
 
 By default, the private keys generated by `tinman keysub` have
 known (i.e. insecure) seed strings.  However, a secret may be
 added to each seed string by prepending a `set_secret` action
 to `tinman keysub`.
 
-## Command-line key generator
+### Command-line key generator
 
 The `get_dev_key` program provided with `steemd` derives
 keys using the same algorithm as `tinman keysub`.
 
-# Running testnet fastgen node
+## Running testnet fastgen node
 
 Now that the transactions have been created, let's use them to initialize a testnet.
 Since many blocks worth of transactions are created, `tinman submit` will
@@ -163,9 +236,9 @@ On the testnet, some serializations are different from the main network, and
 Therefore, `tinman submit` outsources signing of those transactions to the
 `sign_transaction` binary included with `steemd`.
 
-# Pipelining transactions to testnet
+### Pipelining transactions to testnet
 
-```
+```bash
 ( \
   echo '["set_secret", {"secret":"xyz-"}]' ; \
   tinman txgen -c txgen.conf \
@@ -174,13 +247,17 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f fail.json
 ```
 
-# Durables
+# Other Modules
+
+Once the testnet has been bootstrapped, other modules can be used to facilitate deeper orchestration.
+
+## Durables
 
 For consistency across testnet deployments, fixture-like object that must exist for external testing are recreated by the `durables` module.
 
 Copy `durables.conf.example` to `durables.conf`, add any desired objects, and run (typically after initial bootstrap and before `gatling`):
 
-```
+```bash
 ( \
   echo '["set_secret", {"secret":"xyz-"}]' ; \
   tinman durables -c durables.conf \
@@ -189,7 +266,7 @@ tinman keysub | \
 tinman submit -t http://127.0.0.1:9990 --signer steem/programs/util/sign_transaction -f die
 ```
 
-# Warden
+## Warden
 
 Use `warden` to check the current condition of a given chain.  It does some
 basic checks to make sure the chain is up and running, then returns error codes.
@@ -197,8 +274,8 @@ basic checks to make sure the chain is up and running, then returns error codes.
 Returning error code zero (0) means everything looks good.  Non-zero means
 something is amiss.
 
-```
-tinman warden -s http://127.0.0.1:8090 && echo LGTM || echo Bummer.
+```bash
+$ tinman warden -s http://127.0.0.1:8090 && echo LGTM || echo Bummer.
 ```
 
 As an example, you can add `warden` to your deployment script to delay the next step until your seed node has synchronized with the initial bootstrap node.
@@ -215,37 +292,37 @@ done
 echo Ready to proceed.
 ```
 
-# Gatling transactions from mainnet
+## Gatling transactions from mainnet
 
 Populating the test network with transactions from the main network.
 
 To stream from genesis:
 
 ```bash
-tinman gatling -f 1 -o -
+$ tinman gatling -f 1 -o -
 ```
 
 To stream from block 25066272 to 25066292:
 
 ```bash
-tinman gatling -f 25066272 -t 25066292 -o -
+$ tinman gatling -f 25066272 -t 25066292 -o -
 ```
 
 To stream starting from block 25066272:
 
 ```bash
-tinman gatling -f 25066272 -o -
+$ tinman gatling -f 25066272 -o -
 ```
 
-# Running testnet witness node(s)
+## Running testnet witness node(s)
 
 At the end of the transactions to be submitted, `tinman txgen` creates witnesses `init-0` through `init-20`
 and votes for them with large amount of `TESTS`.  The keys of these witnesses are generated by a deterministic
 algorithm compatible with the `get_dev_key` utility program, so the keys of the witnesses may be obtained
 as follows:
 
-```
-programs/util/get_dev_key xxx- block-init-0:21
+```bash
+$ programs/util/get_dev_key xxx- block-init-0:21
 ```
 
 where `xxx` is the `"secret"` string in `txgen.conf`.
@@ -256,7 +333,7 @@ specify the fastgen node using the `p2p-seed-node` option in the config file.
 
 Therefore we may add the witness definitions and private keys to the witness config file:
 
-```
+```bash
 i=0 ; while [ $i -lt 21 ] ; do echo witness = '"'init-$i'"' >> testnet_datadir/config.ini ; let i=i+1 ; done
 steem/programs/util/get_dev_key xxx- block-init-0:21 | cut -d '"' -f 4 | sed 's/^/private-key = /' >> testnet_datadir/config.ini
 ```
@@ -271,5 +348,14 @@ to specify `--enable-stale-production` and `--required-participation=0` flags.  
 long as a sufficient number of other witness nodes are timely producing blocks, it
 is not necessary to use these flags once 128 blocks have been produced after the
 transition.
+
+## Tests
+
+To test `tinman`:
+
+```bash
+$ cd test
+$ pip install .. && python -m unittest *_test.py
+```
 
 <img src="https://i.imgur.com/h57pDVE.png" width="25%" height="25%" />

@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name="tinman",
-      version          = __import__('tinman').__version__,
+      version          = 0.1,
       description      = "Testnet management scripts.",
       url              = "https://github.com/steemit/tinman",
       author           = "Steemit",

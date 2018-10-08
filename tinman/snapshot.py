@@ -8,60 +8,29 @@ https://github.com/steemit/tinman/issues/16
 import argparse
 import json
 import sys
-from simple_steem_client.client import SteemRemoteBackend, SteemInterface, SteemRPCException
-
-from . import __version__
+from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 
 DATABASE_API_SINGLE_QUERY_LIMIT = 1000
-
-# Whitelist of exceptions from transaction source (Mainnet).
-TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
-  "Unable to acquire database lock",
-  "Internal Error",
-  "Server error",
-  "Upstream response error"
-]
 
 def list_all_accounts(steemd):
     """ Generator function providing set of accounts existing in the Main Steem net """
     start = ""
     last = ""
-    retry_count = 0
-    
     while True:
-        retry_count += 1
-        
-        try:
-            result = steemd.database_api.list_accounts(
-                start=start,
-                limit=DATABASE_API_SINGLE_QUERY_LIMIT,
-                order="by_name",
-                )
-            making_progress = False
-            for a in result["accounts"]:
-                if a["name"] > last:
-                    yield a
-                    last = a["name"]
-                    making_progress = True
-                start = last
-            if not making_progress:
-                break
-        except SteemRPCException as e:
-            cause = e.args[0].get("error")
-            if cause:
-                message = cause.get("message")
-                data = cause.get("data")
-                retry = False
-            
-            if message and message in TRANSACTION_SOURCE_RETRYABLE_ERRORS:
-                retry = True
-            
-            if retry and retry_count < MAX_RETRY:
-                print("Recovered (tries: %s): %s" % (retry_count, message), file=sys.stderr)
-                if data:
-                    print(json.dumps(data, indent=2), file=sys.stderr)
-            else:
-                raise e
+        result = steemd.database_api.list_accounts(
+            start=start,
+            limit=DATABASE_API_SINGLE_QUERY_LIMIT,
+            order="by_name",
+            )
+        making_progress = False
+        for a in result["accounts"]:
+            if a["name"] > last:
+                yield a
+                last = a["name"]
+                making_progress = True
+            start = last
+        if not making_progress:
+            break
 
 def list_all_witnesses(steemd):
     """ Generator function providing set of witnesses defined in the Main Steem net """
@@ -129,8 +98,7 @@ def main(argv):
     steemd = SteemInterface(backend)
 
     outfile.write("{\n")
-    outfile.write('"metadata":{"snapshot:semver":"%s","snapshot:origin_api":"%s"}' % (__version__, args.server))
-    outfile.write(',\n"dynamic_global_properties":')
+    outfile.write('"dynamic_global_properties":')
     dump_dgpo(steemd, outfile)
     outfile.write(',\n"accounts":')
     dump_all_accounts(steemd, outfile)

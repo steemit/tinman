@@ -6,8 +6,6 @@ import heapq
 import json
 import sys
 
-from . import __version__
-
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-i", "--infile", default="", dest="infile", metavar="FILE", help="Specify input snapshot, - means stdin")
@@ -44,23 +42,14 @@ def main(argv):
 
         account_balances = {}
         snapshot = {
-          "metadata": {"snapshot:semver": __version__},
           "dynamic_global_properties": {
             "total_vesting_fund_steem": {}
           },
           "accounts": [],
           "witnesses": []
         }
-        
-        for prefix, event, value in ijson.parse(infile):
-            if prefix == "metadata.snapshot:origin_api":
-                snapshot["metadata"]["snapshot:origin_api"] = value
-                break
-        
-        print("Captured:", snapshot["metadata"])
-        
+
         fund = snapshot["dynamic_global_properties"]["total_vesting_fund_steem"]
-        infile.seek(0)
         for prefix, event, value in ijson.parse(infile):
             if prefix == "dynamic_global_properties.total_vesting_fund_steem.amount":
                 fund["amount"] = value
