@@ -4,7 +4,45 @@ import shutil
 from tinman import prockey
 from tinman import txgen
 
+FULL_CONF = {
+    "transactions_per_block" : 40,
+    "snapshot_file" : "/tmp/test-snapshot.json",
+    "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
+    "total_port_balance" : {"amount" : "200000000000", "precision" : 3, "nai" : "@@000000021"},
+    "accounts" : {
+        "initminer" : {
+            "name" : "initminer",
+            "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"}
+        }, "init" : {
+            "name" : "init-{index}",
+            "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"},
+            "count" : 21,
+            "creator" : "initminer"
+        }, "elector" : {
+            "name" : "elect-{index}",
+            "vesting" : {"amount" : "1000000000", "precision" : 3, "nai" : "@@000000021"},
+            "count" : 10,
+            "round_robin_votes_per_elector" : 2,
+            "random_votes_per_elector" : 3,
+            "randseed" : 1234,
+            "creator" : "initminer"
+        }, "porter" : {
+            "name" : "porter",
+            "creator" : "initminer",
+            "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"}
+        }, "manager" : {
+            "name" : "tnman",
+            "creator" : "initminer",
+            "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"}
+        },
+            "STEEM_MINER_ACCOUNT" : {"name" : "mners"},
+            "STEEM_NULL_ACCOUNT" : {"name" : "null"},
+            "STEEM_TEMP_ACCOUNT" : {"name" : "temp"}
+        }
+    }
+    
 class TxgenTest(unittest.TestCase):
+
     def test_create_system_accounts_bad_args(self):
         self.assertRaises(TypeError, txgen.create_system_accounts)
     
@@ -168,44 +206,8 @@ class TxgenTest(unittest.TestCase):
             
     def test_build_actions(self):
         shutil.copyfile("test-snapshot.json", "/tmp/test-snapshot.json")
-        conf = {
-            "transactions_per_block" : 40,
-            "snapshot_file" : "/tmp/test-snapshot.json",
-            "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
-            "total_port_balance" : {"amount" : "200000000000", "precision" : 3, "nai" : "@@000000021"},
-            "accounts" : {
-                "initminer" : {
-                    "name" : "initminer",
-                    "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"}
-                }, "init" : {
-                    "name" : "init-{index}",
-                    "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"},
-                    "count" : 21,
-                    "creator" : "initminer"
-                }, "elector" : {
-                    "name" : "elect-{index}",
-                    "vesting" : {"amount" : "1000000000", "precision" : 3, "nai" : "@@000000021"},
-                    "count" : 10,
-                    "round_robin_votes_per_elector" : 2,
-                    "random_votes_per_elector" : 3,
-                    "randseed" : 1234,
-                    "creator" : "initminer"
-                }, "porter" : {
-                    "name" : "porter",
-                    "creator" : "initminer",
-                    "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"}
-                }, "manager" : {
-                    "name" : "tnman",
-                    "creator" : "initminer",
-                    "vesting" : {"amount" : "1000000", "precision" : 3, "nai" : "@@000000021"}
-                },
-                    "STEEM_MINER_ACCOUNT" : {"name" : "mners"},
-                    "STEEM_NULL_ACCOUNT" : {"name" : "null"},
-                    "STEEM_TEMP_ACCOUNT" : {"name" : "temp"}
-                }
-            }
         
-        for action in txgen.build_actions(conf):
+        for action in txgen.build_actions(FULL_CONF):
             cmd, args = action
             
             if cmd == "metadata":
@@ -222,3 +224,14 @@ class TxgenTest(unittest.TestCase):
                 self.assertGreater(len(args["tx"]["operations"]), 0)
             else:
                 self.fail("Unexpected action: %s" % cmd)
+
+    def test_build_actions_future_snapshot(self):
+        shutil.copyfile("test-future-snapshot.json", "/tmp/test-future-snapshot.json")
+        conf = FULL_CONF.copy()
+        conf["snapshot_file"] = "/tmp/test-future-snapshot.json"
+        
+        with self.assertRaises(RuntimeError) as ctx:
+            for action in txgen.build_actions(conf):
+                cmd, args = action
+        
+        self.assertIn('Unsupported snapshot', str(ctx.exception))
