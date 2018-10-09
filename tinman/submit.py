@@ -17,6 +17,9 @@ import traceback
 
 from . import util
 
+ACTIONS_MAJOR_VERSION_SUPPORTED = 0
+ACTIONS_MINOR_VERSION_SUPPORTED = 2
+
 class TransactionSigner(object):
     def __init__(self, sign_transaction_exe=None, chain_id=None):
         if(chain_id is None):
@@ -172,7 +175,18 @@ def main(argv):
             if cmd == "metadata":
                 metadata = args
                 transactions_per_block = metadata.get("txgen:transactions_per_block", transactions_per_block)
-                print("metadata:", metadata)
+                semver = metadata.get("txgen:semver", '0.0')
+                major_version, minor_version = semver.split('.')
+                major_version = int(major_version)
+                minor_version = int(minor_version)
+
+                if major_version == ACTIONS_MAJOR_VERSION_SUPPORTED:
+                    print("metadata:", metadata)
+                else:
+                    raise RuntimeError("Unsupported actions:", metadata)
+                    
+                if minor_version < ACTIONS_MINOR_VERSION_SUPPORTED:
+                    print("WARNING: Older actions encountered.", file=sys.stderr)
             elif cmd == "wait_blocks":
                 if metadata and args.get("count") == 1 and args.get("miss_blocks"):
                     if args["miss_blocks"] < metadata["recommend:miss_blocks"]:

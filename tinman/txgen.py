@@ -21,6 +21,8 @@ from . import __version__
 from . import prockey
 from . import util
 
+SNAPSHOT_MAJOR_VERSION_SUPPORTED = 0
+SNAPSHOT_MINOR_VERSION_SUPPORTED = 2
 STEEM_GENESIS_TIMESTAMP = 1451606400
 STEEM_BLOCK_INTERVAL = 3
 NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
@@ -381,9 +383,6 @@ def build_actions(conf, silent=True):
     start_time = now - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
-    origin_api = None
-    snapshot_head_block_num = None
-    snapshot_semver = None
     
     metadata = {
       "txgen:semver": __version__,
@@ -404,6 +403,20 @@ def build_actions(conf, silent=True):
             
             if not prefix == '' and not prefix.startswith("metadata") and not prefix.startswith("dynamic_global_properties"):
                 break
+    
+    semver = metadata.get("snapshot:semver", '0.0')
+    major_version, minor_version = semver.split('.')
+    major_version = int(major_version)
+    minor_version = int(minor_version)
+    
+    if major_version == SNAPSHOT_MAJOR_VERSION_SUPPORTED:
+        if not silent:
+            print("metadata:", metadata)
+    else:
+        raise RuntimeError("Unsupported snapshot:", metadata)
+    
+    if minor_version < SNAPSHOT_MINOR_VERSION_SUPPORTED:
+        print("WARNING: Older snapshot encountered.", file=sys.stderr)
     
     yield ["metadata", metadata]
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
