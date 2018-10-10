@@ -310,9 +310,9 @@ def update_accounts(account_stats, conf, keydb, silent=True):
             new_posting_auth["account_auths"].append([tnman, cur_posting_auth["weight_threshold"]])
             
             # substitute prefix for key_auths
-            new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"]]
-            new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"]]
-            new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"]]
+            new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"][:STEEM_MAX_AUTHORITY_MEMBERSHIP]]
+            new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"][:STEEM_MAX_AUTHORITY_MEMBERSHIP]]
+            new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"][:STEEM_MAX_AUTHORITY_MEMBERSHIP]]
 
             ops = [{"type" : "account_update_operation", "value" : {
               "account" : a["name"],

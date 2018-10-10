@@ -1,5 +1,6 @@
 import unittest
 import json
+import shutil
 
 from tinman import keysub
 
@@ -16,4 +17,5 @@ class KeysubTest(unittest.TestCase):
     def test_compute_keypair_from_seed(self):
         # Note, resolver needs to be mocked to properly test.
         self.assertRaises(FileNotFoundError, keysub.compute_keypair_from_seed, '1234', 'secret')
-        self.assertRaises(json.decoder.JSONDecodeError, keysub.compute_keypair_from_seed, '1234', 'secret', '/usr/bin/true')
+        true_exe = shutil.which("true")
+        self.assertRaises(json.decoder.JSONDecodeError, keysub.compute_keypair_from_seed, '1234', 'secret', true_exe)
