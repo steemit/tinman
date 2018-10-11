@@ -134,12 +134,12 @@ class TxgenTest(unittest.TestCase):
             "upbitsteemhot", "blocktrades", "steemit2", "ned", "holiday",
             "imadev", "muchfun", "poloniex", "gopax-deposit", "dan",
             "bithumb.sunshine", "ben", "dantheman", "openledger-dex", "bittrex",
-            "huobi-withdrawal", "korbit3"
+            "huobi-withdrawal", "korbit3", "hellosteem"
         }
         
         self.assertEqual(account_stats["account_names"], expected_account_names)
-        self.assertEqual(account_stats["total_vests"], 103927115336403598)
-        self.assertEqual(account_stats["total_steem"], 60859712641)
+        self.assertEqual(account_stats["total_vests"], 103927120221962824)
+        self.assertEqual(account_stats["total_steem"], 60859732440)
 
     def test_get_proportions(self):
         shutil.copyfile("test-snapshot.json", "/tmp/test-snapshot.json")
@@ -154,7 +154,7 @@ class TxgenTest(unittest.TestCase):
         
         self.assertEqual(proportions["min_vesting_per_account"], 1)
         self.assertEqual(proportions["vest_conversion_factor"], 1469860)
-        self.assertEqual(proportions["steem_conversion_factor"], 776237988251)
+        self.assertEqual(proportions["steem_conversion_factor"], 776237928593)
 
     def test_create_accounts(self):
         shutil.copyfile("test-snapshot.json", "/tmp/test-snapshot.json")
@@ -203,6 +203,12 @@ class TxgenTest(unittest.TestCase):
             for op in account["operations"]:
                 value = op["value"]
                 self.assertIn(["tnman", 1], value["owner"]["account_auths"])
+                self.assertLessEqual(len(value["owner"]["account_auths"]), txgen.STEEM_MAX_AUTHORITY_MEMBERSHIP)
+                self.assertLessEqual(len(value["active"]["account_auths"]), txgen.STEEM_MAX_AUTHORITY_MEMBERSHIP)
+                self.assertLessEqual(len(value["posting"]["account_auths"]), txgen.STEEM_MAX_AUTHORITY_MEMBERSHIP)
+                self.assertLessEqual(len(value["owner"]["key_auths"]), txgen.STEEM_MAX_AUTHORITY_MEMBERSHIP)
+                self.assertLessEqual(len(value["active"]["key_auths"]), txgen.STEEM_MAX_AUTHORITY_MEMBERSHIP)
+                self.assertLessEqual(len(value["posting"]["key_auths"]), txgen.STEEM_MAX_AUTHORITY_MEMBERSHIP)
             
     def test_build_actions(self):
         shutil.copyfile("test-snapshot.json", "/tmp/test-snapshot.json")
@@ -214,7 +220,7 @@ class TxgenTest(unittest.TestCase):
                 self.assertEqual(args["txgen:semver"], "0.2")
                 self.assertEqual(args["txgen:transactions_per_block"], 40)
                 self.assertIsNotNone(args["epoch:created"])
-                self.assertEqual(args["actions:count"], 60)
+                self.assertEqual(args["actions:count"], 63)
                 self.assertGreater(args["recommend:miss_blocks"], 28968013)
                 self.assertEqual(args["snapshot:semver"], "0.2")
                 self.assertEqual(args["snapshot:origin_api"], "http://calculon.local")
