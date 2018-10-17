@@ -108,12 +108,13 @@ def build_actions(conf, min_block, max_block):
                     retry_count = 0
             break
         except SteemRPCException as e:
-            cause = e.args[0]["error"]
-            message = cause["message"]
-            data = cause["data"]
-            retry = False
+            cause = e.args[0].get("error")
+            if cause:
+                message = cause.get("message")
+                data = cause.get("data")
+                retry = False
             
-            if message in TRANSACTION_SOURCE_RETRYABLE_ERRORS:
+            if message and message in TRANSACTION_SOURCE_RETRYABLE_ERRORS:
                 retry = True
             
             if retry and retry_count < MAX_RETRY:
