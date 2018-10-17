@@ -105,5 +105,134 @@
       "vesting": {"amount": "250000000", "precision": 3, "nai": "@@000000021"},
       "creator": "initminer"
     }
+  ],
+  "feeds": [
+    {
+      "publisher": "init-0",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-1",
+      "exchange_rate": {
+        "base": {"amount": "133", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "197", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-2",
+      "exchange_rate": {
+        "base": {"amount": "1481", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "500", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-3",
+      "exchange_rate": {
+        "base": {"amount": "681", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "1000", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-4",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-5",
+      "exchange_rate": {
+        "base": {"amount": "155", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "176", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-6",
+      "exchange_rate": {
+        "base": {"amount": "154", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "180", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-7",
+      "exchange_rate": {
+        "base": {"amount": "151", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "167", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-8",
+      "exchange_rate": {
+        "base": {"amount": "155", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "189", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-9",
+      "exchange_rate": {
+        "base": {"amount": "151", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-10",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-11",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-12",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-13",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-14",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-15",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-16",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-17",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-18",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-19",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }, {
+      "publisher": "init-20",
+      "exchange_rate": {
+        "base": {"amount": "153", "precision": 3, "nai": "@@000000013"},
+        "quote": {"amount": "187", "precision": 3, "nai": "@@000000021"}
+      }
+    }
   ]
 }

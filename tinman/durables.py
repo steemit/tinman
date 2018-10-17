@@ -22,12 +22,23 @@ def build_account_tx(account, keydb, silent=True):
        }}],
        "wif_sigs" : [keydb.get_privkey(account["creator"])]}
     
+def build_feed_tx(feed, keydb, silent=True):
+    return {"operations" : [{"type" : "feed_publish_operation", "value" : {
+        "publisher" : feed["publisher"],
+        "exchange_rate" : feed["exchange_rate"]
+       }}],
+       "wif_sigs" : [keydb.get_privkey(feed["publisher"])]}
+    
 def build_actions(conf, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
     accounts = conf["accounts"]
+    feeds = conf["feeds"]
     
     for account in accounts:
       yield ["submit_transaction", {"tx" : build_account_tx(account, keydb, silent)}]
+    
+    for feed in feeds:
+      yield ["submit_transaction", {"tx" : build_feed_tx(feed, keydb, silent)}]
     
     return
 
