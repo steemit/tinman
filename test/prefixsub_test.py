@@ -97,3 +97,37 @@ class PrefixsubTest(unittest.TestCase):
            }
         }
         self.assertEqual(object, expected_result)
+    
+    def test_transform_prefix_transaction_ignore(self):
+        object = ["submit_transaction", {
+            "tx": {
+                "wif_sigs": ["zprivatekey:posting-tnmanz"],
+                "operations": [{
+                    "type": "custom_json_operation",
+                    "value": {
+                        "json": "[\"follow\",{\"follower\":\"alice\",\"following\":\"bob\",\"what\":[\"blog\"]}]",
+                        "required_auths": [],
+                        "id": "follow",
+                        "required_posting_auths": ["alice"]
+                    }
+                }]
+            },
+            "esc": "z"
+        }]
+        prefixsub.transform_prefix(object)
+        expected_result = ["submit_transaction", {
+            "tx": {
+                "wif_sigs": ["zprivatekey:posting-tnmanz"],
+                "operations": [{
+                    "type": "custom_json_operation",
+                    "value": {
+                        "json": "[\"follow\",{\"follower\":\"alice\",\"following\":\"bob\",\"what\":[\"blog\"]}]",
+                        "required_auths": [],
+                        "id": "follow",
+                        "required_posting_auths": ["alice"]
+                    }
+                }]
+            },
+            "esc": "z"
+        }]
+        self.assertEqual(object, expected_result)
