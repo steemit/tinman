@@ -25,7 +25,7 @@ def str2bool(str_arg):
     """
     return True if str_arg.lower() == 'true' else (False if str_arg.lower() == 'false' else None)
 
-def repack_operations(conf, keydb, min_block, max_block):
+def repack_operations(conf, keydb, min_block, max_block, from_blocks_ago, to_blocks_ago):
     """
     Uses configuration file data to acquire operations from source node
     blocks/transactions and repack them in new transactions one to one.
@@ -39,6 +39,12 @@ def repack_operations(conf, keydb, min_block, max_block):
     
     if min_block == 0:
         min_block = dgpo["head_block_number"]
+
+    if from_blocks_ago != -1:
+        min_block = dgpo["head_block_number"] - from_blocks_ago
+    
+    if to_blocks_ago != -1:
+        max_block = dgpo["head_block_number"] - to_blocks_ago
     
     ported_operations = conf["ported_operations"]
     ported_types = set([op["type"] for op in ported_operations])
@@ -91,7 +97,7 @@ def op_for_role(op, conf, keydb, ported_operations):
             # Assume it's "active" as a fallback.
             return {"operations" : [op], "wif_sigs" : [keydb.get_privkey(tx_signer, "active")]}
 
-def build_actions(conf, min_block, max_block):
+def build_actions(conf, min_block, max_block, from_blocks_ago, to_blocks_ago):
     """
     Packs transactions rebuilt with operations acquired from source node into blocks of configured size.
     """
@@ -102,7 +108,7 @@ def build_actions(conf, min_block, max_block):
         retry_count += 1
         
         try:
-            for b in util.batch(repack_operations(conf, keydb, min_block, max_block), conf["transactions_per_block"]):
+            for b in util.batch(repack_operations(conf, keydb, min_block, max_block, from_blocks_ago, to_blocks_ago), conf["transactions_per_block"]):
                 for tx in b:
                     yield ["submit_transaction", {"tx" : tx}]
                     retry_count = 0
@@ -130,6 +136,8 @@ def main(argv):
     parser.add_argument("-c", "--conffile", default="gatling.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
     parser.add_argument("-f", "--from_block", default=-1, dest="min_block_num", metavar="INT", help="Stream from block_num")
     parser.add_argument("-t", "--to_block", default=-1, dest="max_block_num", metavar="INT", help="Stream to block_num")
+    parser.add_argument("-fb", "--from_blocks_ago", default=-1, dest="from_blocks_ago", metavar="INT", help="Stream from relative block_num")
+    parser.add_argument("-tb", "--to_blocks_ago", default=-1, dest="to_blocks_ago", metavar="INT", help="Stream to relative block_num")
     parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
@@ -143,6 +151,8 @@ def main(argv):
     
     min_block_num = int(args.min_block_num)
     max_block_num = int(args.max_block_num)
+    from_blocks_ago = int(args.from_blocks_ago)
+    to_blocks_ago = int(args.to_blocks_ago)
     
     if min_block_num == -1:
         min_block_num = int(conf["min_block_number"])
@@ -150,7 +160,7 @@ def main(argv):
     if max_block_num == -1:
         max_block_num = int(conf["max_block_number"])
     
-    for action in build_actions(conf, min_block_num, max_block_num):
+    for action in build_actions(conf, min_block_num, max_block_num, from_blocks_ago, to_blocks_ago):
         outfile.write(util.action_to_str(action))
         outfile.write("\n")
 

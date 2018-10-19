@@ -165,12 +165,6 @@ def main(argv):
         line = line.strip()
         cmd, args = json.loads(line)
 
-        if metadata and transactions_count > 0 and transactions_count % transactions_per_block == 0:
-            generate_blocks(steemd, {"count": 1}, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
-            cached_dgpo.reset()
-            if cmd == "wait_blocks" and args.get("count") == 1 and not args.get("miss_blocks"):
-                continue
-        
         try:
             if cmd == "metadata":
                 metadata = args
@@ -225,6 +219,13 @@ def main(argv):
             fail_file.flush()
             if die_on_fail:
                 raise
+        
+        if metadata and transactions_count > 0 and transactions_count % transactions_per_block == 0:
+            generate_blocks(steemd, {"count": 1}, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+            cached_dgpo.reset()
+            if cmd == "wait_blocks" and args.get("count") == 1 and not args.get("miss_blocks"):
+                continue
+        
 
 if __name__ == "__main__":
     main(sys.argv)

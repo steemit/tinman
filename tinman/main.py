@@ -12,6 +12,7 @@ from . import submit
 from . import warden
 from . import amountsub
 from . import durables
+from . import prefixsub
 
 class Help(object):
 
@@ -33,6 +34,7 @@ commands = collections.OrderedDict((
             ("warden"  , warden  ),
             ("amountsub"  , amountsub  ),
             ("durables"  , durables  ),
+            ("prefixsub", prefixsub),
             ("help"    , Help    ),
            ))
 
