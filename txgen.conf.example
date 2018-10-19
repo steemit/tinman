@@ -2,6 +2,7 @@
  "transactions_per_block" : 40,
 
  "snapshot_file" : "snapshot.json",
+ "backfill_file" : "backfill.actions",
 
  "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
  "total_port_balance" : {"amount" : "200000000000", "precision" : 3, "nai" : "@@000000021"},
