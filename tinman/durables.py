@@ -11,7 +11,7 @@ def build_account_tx(account, keydb, silent=True):
     name = account["name"]
     
     return {"operations" : [{"type" : "account_create_operation", "value" : {
-        "fee" : account["vesting"],
+        "fee" : {"amount" : "0", "precision" : 3, "nai" : "@@000000021"},
         "creator" : account["creator"],
         "new_account_name" : name,
         "owner" : keydb.get_authority(name, "owner"),
@@ -19,15 +19,30 @@ def build_account_tx(account, keydb, silent=True):
         "posting" : keydb.get_authority(name, "posting"),
         "memo_key" : keydb.get_pubkey(name, "memo"),
         "json_metadata" : "",
+       }}, {"type" : "transfer_to_vesting_operation", "value" : {
+        "from" : "initminer",
+        "to" : name,
+        "amount" : account["vesting"],
        }}],
        "wif_sigs" : [keydb.get_privkey(account["creator"])]}
+    
+def build_feed_tx(feed, keydb, silent=True):
+    return {"operations" : [{"type" : "feed_publish_operation", "value" : {
+        "publisher" : feed["publisher"],
+        "exchange_rate" : feed["exchange_rate"]
+       }}],
+       "wif_sigs" : [keydb.get_privkey(feed["publisher"])]}
     
 def build_actions(conf, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
     accounts = conf["accounts"]
+    feeds = conf["feeds"]
     
     for account in accounts:
       yield ["submit_transaction", {"tx" : build_account_tx(account, keydb, silent)}]
+    
+    for feed in feeds:
+      yield ["submit_transaction", {"tx" : build_feed_tx(feed, keydb, silent)}]
     
     return
 

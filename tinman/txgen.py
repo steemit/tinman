@@ -6,6 +6,7 @@ import hashlib
 import itertools
 import json
 import os
+import os.path
 import random
 import sys
 
@@ -312,9 +313,9 @@ def update_accounts(account_stats, conf, keydb, silent=True):
             new_posting_auth["account_auths"].append([tnman, cur_posting_auth["weight_threshold"]])
             
             # substitute prefix for key_auths
-            new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"]]
-            new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"]]
-            new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"]]
+            new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"][:STEEM_MAX_AUTHORITY_MEMBERSHIP]]
+            new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"][:STEEM_MAX_AUTHORITY_MEMBERSHIP]]
+            new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"][:STEEM_MAX_AUTHORITY_MEMBERSHIP]]
 
             ops = [{"type" : "account_update_operation", "value" : {
               "account" : a["name"],
@@ -383,6 +384,10 @@ def build_actions(conf, silent=True):
     start_time = now - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
     miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
     miss_blocks = max(miss_blocks-1, 0)
+    origin_api = None
+    snapshot_head_block_num = None
+    snapshot_semver = None
+    has_backfill = False
     
     metadata = {
       "txgen:semver": __version__,
@@ -408,6 +413,7 @@ def build_actions(conf, silent=True):
     major_version, minor_version = semver.split('.')
     major_version = int(major_version)
     minor_version = int(minor_version)
+    backfill_file = conf.get("backfill_file", None)
     
     if major_version == SNAPSHOT_MAJOR_VERSION_SUPPORTED:
         if not silent:
@@ -418,14 +424,25 @@ def build_actions(conf, silent=True):
     if minor_version < SNAPSHOT_MINOR_VERSION_SUPPORTED:
         print("WARNING: Older snapshot encountered.", file=sys.stderr)
     
+    if backfill_file and os.path.exists(backfill_file) and os.path.isfile(backfill_file):
+        num_lines = sum(1 for line in open(backfill_file))
+        if num_lines > 0:
+            metadata["backfill_actions:count"] = num_lines
+            metadata["actions:count"] += num_lines
+            has_backfill = True
+    
     yield ["metadata", metadata]
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
     for b in util.batch(build_setup_transactions(account_stats, conf, keydb, silent), transactions_per_block):
-        yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
-
+    
+    if has_backfill:
+        with open(conf["backfill_file"], "rb") as f:
+            for line in input_file:
+                yield line
+    
     for tx in update_witnesses(conf, keydb, "init"):
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
