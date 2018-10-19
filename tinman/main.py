@@ -32,13 +32,15 @@ commands = collections.OrderedDict((
             ("sample"  , sample  ),
             ("submit"  , submit  ),
             ("warden"  , warden  ),
-            ("amountsub"  , amountsub  ),
-            ("durables"  , durables  ),
+            ("amountsub", amountsub),
+            ("durables", durables),
             ("prefixsub", prefixsub),
-            ("help"    , Help    ),
+            ("help"    , Help),
            ))
 
+
 def main(argv):
+
     if len(argv) == 0:
         argv = list(argv) + ["tinman"]
     if len(argv) == 1:
@@ -53,11 +55,13 @@ def main(argv):
         return 1
     return module.main(argv[1:])
 
+
 def sys_main():
     result = main(sys.argv)
     if result is None:
         result = 0
     sys.exit(result)
+
 
 if __name__ == "__main__":
     sys_main()

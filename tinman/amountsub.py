@@ -7,6 +7,7 @@ import json
 import sys
 import math
 
+
 def transform_amounts(object, ratio, floor_satoshi=1):
     def intersection(a, b):
         c = [value for value in a if value in b]
@@ -35,12 +36,17 @@ def transform_amounts(object, ratio, floor_satoshi=1):
                 
                 field["amount"] = str(new_amount)
 
+
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Adjust amount fields by ratio")
-    parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read actions from")
-    parser.add_argument("-o", "--output-file", default="-", dest="output_file", metavar="FILE", help="File to write actions to")
-    parser.add_argument("-r", "--ratio", default="1.0", dest="ratio", metavar="FLOAT", help="Adjust amounts in op to ratio")
-    parser.add_argument("-f", "--floor-satoshi", default="1", dest="floor_satoshi", metavar="INT", help="Minimum amount after ratio is applied")
+    parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE",
+                        help="File to read actions from")
+    parser.add_argument("-o", "--output-file", default="-", dest="output_file", metavar="FILE",
+                        help="File to write actions to")
+    parser.add_argument("-r", "--ratio", default="1.0", dest="ratio", metavar="FLOAT",
+                        help="Adjust amounts in op to ratio")
+    parser.add_argument("-f", "--floor-satoshi", default="1", dest="floor_satoshi", metavar="INT",
+                        help="Minimum amount after ratio is applied")
     args = parser.parse_args(argv[1:])
     
     if args.output_file == "-":
@@ -80,6 +86,7 @@ def main(argv):
         input_file.close()
     if args.output_file != "-":
         output_file.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)

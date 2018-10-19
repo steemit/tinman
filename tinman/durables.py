@@ -7,6 +7,7 @@ import sys
 from . import prockey
 from . import util
 
+
 def build_account_tx(account, keydb, silent=True):
     name = account["name"]
     
@@ -25,31 +26,36 @@ def build_account_tx(account, keydb, silent=True):
         "amount" : account["vesting"],
        }}],
        "wif_sigs" : [keydb.get_privkey(account["creator"])]}
-    
+
+
 def build_feed_tx(feed, keydb, silent=True):
-    return {"operations" : [{"type" : "feed_publish_operation", "value" : {
-        "publisher" : feed["publisher"],
-        "exchange_rate" : feed["exchange_rate"]
+    return {"operations" : [{"type" : "feed_publish_operation", "value": {
+        "publisher": feed["publisher"],
+        "exchange_rate": feed["exchange_rate"]
        }}],
-       "wif_sigs" : [keydb.get_privkey(feed["publisher"])]}
-    
+       "wif_sigs": [keydb.get_privkey(feed["publisher"])]}
+
+
 def build_actions(conf, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
     accounts = conf["accounts"]
     feeds = conf["feeds"]
     
     for account in accounts:
-      yield ["submit_transaction", {"tx" : build_account_tx(account, keydb, silent)}]
+        yield ["submit_transaction", {"tx" : build_account_tx(account, keydb, silent)}]
     
     for feed in feeds:
-      yield ["submit_transaction", {"tx" : build_feed_tx(feed, keydb, silent)}]
+        yield ["submit_transaction", {"tx" : build_feed_tx(feed, keydb, silent)}]
     
     return
 
+
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate durable objects for Steem testnet")
-    parser.add_argument("-c", "--conffile", default="durables.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
-    parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
+    parser.add_argument("-c", "--conffile", default="durables.conf", dest="conffile", metavar="FILE",
+                        help="Specify configuration file")
+    parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE",
+                        help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
     with open(args.conffile, "r") as f:
@@ -67,6 +73,7 @@ def main(argv):
     outfile.flush()
     if args.outfile != "-":
         outfile.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)

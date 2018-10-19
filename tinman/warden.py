@@ -8,12 +8,14 @@ from simple_steem_client.client import SteemRemoteBackend, SteemInterface
 PREFLIGHT_GO = 'go'
 PREFLIGHT_NOGO = 'nogo'
 
+
 def main(argv):
     """
     Checks basic node suitability for gatling phase.
     """
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
-    parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL", help="Specify steemd server to watch over")
+    parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL",
+                        help="Specify steemd server to watch over")
     args = parser.parse_args(argv[1:])
     
     backend = SteemRemoteBackend(nodes=[args.server], appbase=True, max_timeout=0.0, max_retries=0)

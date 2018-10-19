@@ -8,10 +8,13 @@ import sys
 
 from . import __version__
 
+
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
-    parser.add_argument("-i", "--infile", default="", dest="infile", metavar="FILE", help="Specify input snapshot, - means stdin")
-    parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output snapshot, - means stdout")
+    parser.add_argument("-i", "--infile", default="", dest="infile", metavar="FILE",
+                        help="Specify input snapshot, - means stdin")
+    parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE",
+                        help="Specify output snapshot, - means stdout")
     args = parser.parse_args(argv[1:])
 
     sample_size = 2000
@@ -81,7 +84,7 @@ def main(argv):
                 print("Balances so far:", len(account_balances))
         
         top_accounts = heapq.nlargest(sample_size, account_balances,
-            key=lambda a : int(account_balances[a]))
+                                      key=lambda a :int(account_balances[a]))
         
         print('Found top accounts:', len(top_accounts))
         
