@@ -425,7 +425,9 @@ def build_actions(conf, silent=True):
         print("WARNING: Older snapshot encountered.", file=sys.stderr)
     
     if backfill_file and os.path.exists(backfill_file) and os.path.isfile(backfill_file):
-        num_lines = sum(1 for line in open(backfill_file))
+        with open(backfill_file, "r") as f:
+            num_lines = sum(1 for line in f)
+        
         if num_lines > 0:
             metadata["backfill_actions:count"] = num_lines
             metadata["actions:count"] += num_lines
@@ -439,9 +441,9 @@ def build_actions(conf, silent=True):
             yield ["submit_transaction", {"tx" : tx}]
     
     if has_backfill:
-        with open(conf["backfill_file"], "rb") as f:
-            for line in input_file:
-                yield line
+        with open(backfill_file, "r") as f:
+            for line in f:
+                yield json.loads(line)
     
     for tx in update_witnesses(conf, keydb, "init"):
         yield ["submit_transaction", {"tx" : tx}]
