@@ -30,6 +30,7 @@ NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 TRANSACTION_WITNESS_SETUP_PAD = 100
 STEEM_MAX_AUTHORITY_MEMBERSHIP = 10
 DENOM = 10**12        # we need stupidly high precision because VESTS
+STEEM_BLOCKS_PER_DAY = 28800
 
 def create_system_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
@@ -431,6 +432,8 @@ def build_actions(conf, silent=True):
         if num_lines > 0:
             metadata["backfill_actions:count"] = num_lines
             metadata["actions:count"] += num_lines
+            miss_blocks -= max(num_lines // transactions_per_block, STEEM_BLOCKS_PER_DAY * 30)
+            metadata["recommend:miss_blocks"] = miss_blocks
             has_backfill = True
     
     yield ["metadata", metadata]
@@ -444,6 +447,8 @@ def build_actions(conf, silent=True):
         with open(backfill_file, "r") as f:
             for line in f:
                 yield json.loads(line)
+        
+        yield ["metadata", {"post_backfill" : True}]
     
     for tx in update_witnesses(conf, keydb, "init"):
         yield ["submit_transaction", {"tx" : tx}]

@@ -19,6 +19,7 @@ from . import util
 
 ACTIONS_MAJOR_VERSION_SUPPORTED = 0
 ACTIONS_MINOR_VERSION_SUPPORTED = 2
+STEEM_BLOCK_INTERVAL = 3
 
 class TransactionSigner(object):
     def __init__(self, sign_transaction_exe=None, chain_id=None):
@@ -168,19 +169,30 @@ def main(argv):
         try:
             if cmd == "metadata":
                 metadata = args
-                transactions_per_block = metadata.get("txgen:transactions_per_block", transactions_per_block)
-                semver = metadata.get("txgen:semver", '0.0')
-                major_version, minor_version = semver.split('.')
-                major_version = int(major_version)
-                minor_version = int(minor_version)
-
-                if major_version == ACTIONS_MAJOR_VERSION_SUPPORTED:
-                    print("metadata:", metadata)
-                else:
-                    raise RuntimeError("Unsupported actions:", metadata)
+                
+                if args.get("post_backfill"):
+                    dgpo = cached_dgpo.get()
+                    now = datetime.datetime.utcnow()
+                    head_block_time = datetime.datetime.strptime(dgpo["time"], "%Y-%m-%dT%H:%M:%S")
+                    join_head = int((now - head_block_time).total_seconds()) // STEEM_BLOCK_INTERVAL
                     
-                if minor_version < ACTIONS_MINOR_VERSION_SUPPORTED:
-                    print("WARNING: Older actions encountered.", file=sys.stderr)
+                    if join_head > STEEM_BLOCK_INTERVAL:
+                        generate_blocks(steemd, {"count": join_head}, cached_dgpo=cached_dgpo, produce_realtime=produce_realtime)
+                        cached_dgpo.reset()
+                else:
+                    transactions_per_block = metadata.get("txgen:transactions_per_block", transactions_per_block)
+                    semver = metadata.get("txgen:semver", '0.0')
+                    major_version, minor_version = semver.split('.')
+                    major_version = int(major_version)
+                    minor_version = int(minor_version)
+
+                    if major_version == ACTIONS_MAJOR_VERSION_SUPPORTED:
+                        print("metadata:", metadata)
+                    else:
+                        raise RuntimeError("Unsupported actions:", metadata)
+                        
+                    if minor_version < ACTIONS_MINOR_VERSION_SUPPORTED:
+                        print("WARNING: Older actions encountered.", file=sys.stderr)
             elif cmd == "wait_blocks":
                 if metadata and args.get("count") == 1 and args.get("miss_blocks"):
                     if args["miss_blocks"] < metadata["recommend:miss_blocks"]:

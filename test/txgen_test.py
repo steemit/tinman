@@ -223,7 +223,7 @@ class TxgenTest(unittest.TestCase):
                 self.assertEqual(args["txgen:transactions_per_block"], 40)
                 self.assertIsNotNone(args["epoch:created"])
                 self.assertEqual(args["actions:count"], 73)
-                self.assertGreater(args["recommend:miss_blocks"], 28968013)
+                self.assertGreater(args["recommend:miss_blocks"], 28631339)
                 self.assertEqual(args["snapshot:semver"], "0.2")
                 self.assertEqual(args["snapshot:origin_api"], "http://calculon.local")
             elif cmd == "wait_blocks":
@@ -233,9 +233,11 @@ class TxgenTest(unittest.TestCase):
                 self.assertIsInstance(args["tx"]["wif_sigs"], list)
                 for wif in args["tx"]["wif_sigs"]:
                     if isinstance(wif, str):
-                        if len(wif) < 51:
-                            self.assertEqual(args["esc"], wif[0])
-                            self.assertEqual(args["esc"], wif[-1])
+                        esc = args.get("esc", None)
+                        
+                        if esc and len(wif) < 51:
+                            self.assertEqual(esc, wif[0])
+                            self.assertEqual(esc, wif[-1])
                         else:
                             self.assertEqual(len(wif), 51)
                     else:
