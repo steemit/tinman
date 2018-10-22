@@ -16,6 +16,7 @@ def tag_escape_sequences(s, esc):
     """
     return zip(s.split(esc), itertools.cycle([False, True]))
 
+
 def batch(it, size=1):
     """
     Change iterable into batches
@@ -34,6 +35,7 @@ def batch(it, size=1):
     if len(b) > 0:
         yield b
     return
+
 
 def find_non_substr(s, alphabet="abcdefghijklmnopqrstuvwxyz", start=""):
     """
@@ -87,6 +89,7 @@ def find_non_substr(s, alphabet="abcdefghijklmnopqrstuvwxyz", start=""):
 
     return result
 
+
 def iterate_operations_from(steemd, is_appbase, min_block_number, max_block_number, searched_operation_names):
     """
     Yields operations iterated from provided node's blocks.
@@ -124,6 +127,7 @@ def iterate_operations_from(steemd, is_appbase, min_block_number, max_block_numb
                 if not filter_operation or another_operation['type'] in searched_operation_names:
                     yield another_operation
     return
+
 
 def action_to_str(action):
     """

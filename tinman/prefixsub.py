@@ -13,6 +13,7 @@ PUB_KEY_LEN = 53
 MAINNET_DISABLED_WITNESS_KEY = "STM1111111111111111111111111111111114T1Anm"
 TESTNET_DISABLED_WITNESS_KEY = "TST1111111111111111111111111111111114T1Anm"
 
+
 def transform_prefix(object):
     if isinstance(object, list):
         for i, e in enumerate(object):
@@ -37,10 +38,13 @@ def transform_prefix(object):
         else:
             return object
 
+
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Substitute prefix")
-    parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE", help="File to read actions from")
-    parser.add_argument("-o", "--output-file", default="-", dest="output_file", metavar="FILE", help="File to write actions to")
+    parser.add_argument("-i", "--input-file", default="-", dest="input_file", metavar="FILE",
+                        help="File to read actions from")
+    parser.add_argument("-o", "--output-file", default="-", dest="output_file", metavar="FILE",
+                        help="File to write actions to")
     args = parser.parse_args(argv[1:])
     
     if args.output_file == "-":
@@ -74,6 +78,7 @@ def main(argv):
         input_file.close()
     if args.output_file != "-":
         output_file.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)

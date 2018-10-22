@@ -23,6 +23,7 @@ TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
   "Upstream response error"
 ]
 
+
 def list_all_accounts(steemd):
     """ Generator function providing set of accounts existing in the Main Steem net """
     start = ""
@@ -64,6 +65,7 @@ def list_all_accounts(steemd):
             else:
                 raise e
 
+
 def list_all_witnesses(steemd):
     """ Generator function providing set of witnesses defined in the Main Steem net """
     start = ""
@@ -87,9 +89,11 @@ def list_all_witnesses(steemd):
         if not making_progress:
             break
 
-# Helper function to reuse code related to collection dump across different usecases
+
 def dump_collection(c, outfile):
-    """ Allows to dump collection into JSON string. """
+    """ Allows to dump collection into JSON string.
+     # Helper function to reuse code related to collection dump across different usecases
+    """
     outfile.write("[\n")
     first = True
     for o in c:
@@ -99,26 +103,32 @@ def dump_collection(c, outfile):
         first = False
     outfile.write("\n]")
 
+
 def dump_all_accounts(steemd, outfile):
     """ Allows to dump into the snapshot all accounts provided by Steem Net"""
     dump_collection(list_all_accounts(steemd), outfile)
 
+
 def dump_all_witnesses(steemd, outfile):
     """ Allows to dump into the snapshot all witnesses provided by Steem Net"""
     dump_collection(list_all_witnesses(steemd), outfile)
+
 
 def dump_dgpo(steemd, outfile):
     """ Allows to dump into the snapshot all Dynamic Global Properties Objects
         provided by Steem Net
     """
     dgpo = steemd.database_api.get_dynamic_global_properties(x=None)
-    json.dump( dgpo, outfile, separators=(",", ":"), sort_keys=True )
+    json.dump(dgpo, outfile, separators=(",", ":"), sort_keys=True)
+
 
 def main(argv):
     """ Tool entry point function """
     parser = argparse.ArgumentParser(prog=argv[0], description="Create snapshot files for Steem")
-    parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL", help="Specify mainnet steemd server")
-    parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE", help="Specify output file, - means stdout")
+    parser.add_argument("-s", "--server", default="http://127.0.0.1:8090", dest="server", metavar="URL",
+                        help="Specify mainnet steemd server")
+    parser.add_argument("-o", "--outfile", default="-", dest="outfile", metavar="FILE",
+                        help="Specify output file, - means stdout")
     args = parser.parse_args(argv[1:])
 
     if args.outfile == "-":

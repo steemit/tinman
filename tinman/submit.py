@@ -21,9 +21,11 @@ ACTIONS_MAJOR_VERSION_SUPPORTED = 0
 ACTIONS_MINOR_VERSION_SUPPORTED = 2
 STEEM_BLOCK_INTERVAL = 3
 
+
 class TransactionSigner(object):
+
     def __init__(self, sign_transaction_exe=None, chain_id=None):
-        if(chain_id is None):
+        if chain_id is None:
             self.proc = subprocess.Popen([sign_transaction_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         else:
             self.proc = subprocess.Popen([sign_transaction_exe, "--chain-id="+chain_id], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -38,7 +40,9 @@ class TransactionSigner(object):
         line = self.proc.stdout.readline().decode("utf-8")
         return json.loads(line)
 
+
 class CachedDgpo(object):
+
     def __init__(self, timefunc=time.time, refresh_interval=1.0, steemd=None):
         self.timefunc = timefunc
         self.refresh_interval = refresh_interval
@@ -61,12 +65,14 @@ class CachedDgpo(object):
             self.last_refresh = now
         return self.dgpo
 
+
 def wait_for_real_time(when):
     while True:
         rtc_now = datetime.datetime.utcnow()
         if rtc_now >= when:
             break
         time.sleep(0.4)
+
 
 def generate_blocks(steemd, args, cached_dgpo=None, now=None, produce_realtime=False):
     if args["count"] <= 0:
@@ -111,6 +117,7 @@ def generate_blocks(steemd, args, cached_dgpo=None, now=None, produce_realtime=F
                edit_if_needed=False,
                )
     return
+
 
 def main(argv):
 

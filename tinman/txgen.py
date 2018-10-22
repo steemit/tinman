@@ -32,27 +32,29 @@ STEEM_MAX_AUTHORITY_MEMBERSHIP = 10
 DENOM = 10**12        # we need stupidly high precision because VESTS
 STEEM_BLOCKS_PER_DAY = 28800
 
+
 def create_system_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
     for index in range(desc.get("count", 1)):
         name = desc["name"].format(index=index)
-        yield {"operations" : [{"type" : "account_create_operation", "value" : {
-            "fee" : {"amount" : "0", "precision" : 3, "nai" : "@@000000021"},
-            "creator" : desc["creator"],
-            "new_account_name" : name,
-            "owner" : keydb.get_authority(name, "owner"),
-            "active" : keydb.get_authority(name, "active"),
-            "posting" : keydb.get_authority(name, "posting"),
-            "memo_key" : keydb.get_pubkey(name, "memo"),
-            "json_metadata" : "",
-           }}, {"type" : "transfer_to_vesting_operation", "value" : {
-            "from" : "initminer",
-            "to" : name,
-            "amount" : desc["vesting"],
+        yield {"operations": [{"type": "account_create_operation", "value": {
+            "fee": {"amount": "0", "precision": 3, "nai": "@@000000021"},
+            "creator": desc["creator"],
+            "new_account_name": name,
+            "owner": keydb.get_authority(name, "owner"),
+            "active": keydb.get_authority(name, "active"),
+            "posting": keydb.get_authority(name, "posting"),
+            "memo_key": keydb.get_pubkey(name, "memo"),
+            "json_metadata": "",
+           }}, {"type": "transfer_to_vesting_operation", "value": {
+            "from": "initminer",
+            "to": name,
+            "amount": desc["vesting"],
            }}],
-           "wif_sigs" : [keydb.get_privkey(desc["creator"])]}
+           "wif_sigs": [keydb.get_privkey(desc["creator"])]}
 
     return
+
 
 def vote_accounts(conf, keydb, elector, elected):
     er_desc = conf["accounts"][elector]
@@ -75,29 +77,30 @@ def vote_accounts(conf, keydb, elector, elected):
         ops = []
         er_name = er_desc["name"].format(index=er_index)
         for ed_index in votes:
-           ed_name = ed_desc["name"].format(index=ed_index)
-           ops.append({"type" : "account_witness_vote_operation", "value" : {
-            "account" : er_name,
-            "witness" : ed_name,
-            "approve" : True,
-            }})
-        yield {"operations" : ops, "wif_sigs" : [keydb.get_privkey(er_name)]}
+            ed_name = ed_desc["name"].format(index=ed_index)
+            ops.append(
+                {"type": "account_witness_vote_operation",
+                 "value": {"account": er_name, "witness" : ed_name, "approve": True, }}
+            )
+        yield {"operations": ops, "wif_sigs": [keydb.get_privkey(er_name)]}
     return
+
 
 def update_witnesses(conf, keydb, name):
     desc = conf["accounts"][name]
     for index in range(desc["count"]):
         name = desc["name"].format(index=index)
         block_signing_key = keydb.get_pubkey(name, 'block')
-        yield {"operations" : [{"type" : "witness_update_operation", "value" : {
-            "owner" : name,
-            "url" : "https://steemit.com/",
-            "block_signing_key" : block_signing_key,
-            "props" : {},
-            "fee" : amount(0),
+        yield {"operations": [{"type" : "witness_update_operation", "value" : {
+            "owner": name,
+            "url": "https://steemit.com/",
+            "block_signing_key": block_signing_key,
+            "props": {},
+            "fee": amount(0),
            }}],
-           "wif_sigs" : [keydb.get_privkey(name)]}
+           "wif_sigs": [keydb.get_privkey(name)]}
     return
+
 
 def build_setup_transactions(account_stats, conf, keydb, silent=True):
     yield from create_system_accounts(conf, keydb, "init")
@@ -106,37 +109,40 @@ def build_setup_transactions(account_stats, conf, keydb, silent=True):
     yield from create_system_accounts(conf, keydb, "porter")
     yield from port_snapshot(account_stats, conf, keydb, silent)
 
+
 def build_initminer_tx(conf, keydb):
     return {"operations" : [
-     {"type" : "account_update_operation",
-      "value" : {
-       "account" : "initminer",
-       "owner" : keydb.get_authority("initminer", "owner"),
-       "active" : keydb.get_authority("initminer", "active"),
-       "posting" : keydb.get_authority("initminer", "posting"),
-       "memo_key" : keydb.get_pubkey("initminer", "memo"),
-       "json_metadata" : "",
+     {"type": "account_update_operation",
+      "value": {
+       "account": "initminer",
+       "owner": keydb.get_authority("initminer", "owner"),
+       "active": keydb.get_authority("initminer", "active"),
+       "posting": keydb.get_authority("initminer", "posting"),
+       "memo_key": keydb.get_pubkey("initminer", "memo"),
+       "json_metadata": "",
       }},
-     {"type" : "transfer_to_vesting_operation",
-      "value" : {
-       "from" : "initminer",
-       "to" : "initminer",
-       "amount" : conf["accounts"]["initminer"]["vesting"],
+     {"type": "transfer_to_vesting_operation",
+      "value": {
+       "from": "initminer",
+       "to": "initminer",
+       "amount": conf["accounts"]["initminer"]["vesting"],
       }},
-     {"type" : "account_witness_vote_operation",
-      "value" : {
-       "account" : "initminer",
-       "witness" : "initminer",
-       "approve" : True,
+     {"type": "account_witness_vote_operation",
+      "value": {
+       "account": "initminer",
+       "witness": "initminer",
+       "approve": True,
       }},
-    ],
-    "wif_sigs" : ["5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]}
+    ], "wif_sigs": ["5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]}
+
 
 def satoshis(s):
     return int(s["amount"])
 
+
 def amount(satoshis, prec=3, symbol="@@000000021"):
-    return {"amount" : str(satoshis), "precision" : prec, "nai" : symbol}
+    return {"amount": str(satoshis), "precision": prec, "nai": symbol}
+
 
 def get_system_account_names(conf):
     for desc in conf["accounts"].values():
@@ -144,6 +150,7 @@ def get_system_account_names(conf):
             name = desc["name"].format(index=index)
             yield name
     return
+
 
 def get_account_stats(conf, silent=True):
     system_account_names = set(get_system_account_names(conf))
@@ -173,6 +180,7 @@ def get_account_stats(conf, silent=True):
       "total_vests": vests,
       "total_steem": total_steem
     }
+
 
 def get_proportions(account_stats, conf, silent=True):
     """
@@ -220,6 +228,7 @@ def get_proportions(account_stats, conf, silent=True):
       "steem_conversion_factor": steem_conversion_factor
     }
 
+
 def create_accounts(account_stats, conf, keydb, silent=True):
     system_account_names = set(get_system_account_names(conf))
     proportions = get_proportions(account_stats, conf, silent)
@@ -230,7 +239,7 @@ def create_accounts(account_stats, conf, keydb, silent=True):
     num_accounts = len(account_names)
     porter = conf["accounts"]["porter"]["name"]
     porter_wif = keydb.get_privkey("porter")
-    create_auth = {"account_auths" : [["porter", 1]], "key_auths" : [], "weight_threshold" : 1}
+    create_auth = {"account_auths": [["porter", 1]], "key_auths": [], "weight_threshold": 1}
     accounts_created = 0
     
     with open(conf["snapshot_file"], "rb") as f:
@@ -243,26 +252,26 @@ def create_accounts(account_stats, conf, keydb, silent=True):
             name = a["name"]
             vesting_amount = max(vesting_amount, min_vesting_per_account)
             
-            ops = [{"type" : "account_create_operation", "value" : {
-              "fee" : {"amount" : "0", "precision" : 3, "nai" : "@@000000021"},
-              "creator" : porter,
-              "new_account_name" : name,
-              "owner" : create_auth,
-              "active" : create_auth,
-              "posting" : create_auth,
-              "memo_key" : "TST"+a["memo_key"][3:],
-              "json_metadata" : "",
-             }}, {"type" : "transfer_to_vesting_operation", "value" : {
-              "from" : porter,
-              "to" : name,
-              "amount" : amount(vesting_amount),
+            ops = [{"type": "account_create_operation", "value": {
+              "fee": {"amount": "0", "precision": 3, "nai": "@@000000021"},
+              "creator": porter,
+              "new_account_name": name,
+              "owner": create_auth,
+              "active": create_auth,
+              "posting": create_auth,
+              "memo_key": "TST"+a["memo_key"][3:],
+              "json_metadata": "",
+             }}, {"type": "transfer_to_vesting_operation", "value": {
+              "from": porter,
+              "to": name,
+              "amount": amount(vesting_amount),
              }}]
             if transfer_amount > 0:
-                ops.append({"type" : "transfer_operation", "value" : {
-                 "from" : porter,
-                 "to" : name,
-                 "amount" : amount(transfer_amount),
-                 "memo" : "Ported balance",
+                ops.append({"type": "transfer_operation", "value": {
+                 "from": porter,
+                 "to": name,
+                 "amount": amount(transfer_amount),
+                 "memo": "Ported balance",
                  }})
             
             accounts_created += 1
@@ -271,11 +280,12 @@ def create_accounts(account_stats, conf, keydb, silent=True):
                     print("Accounts created:", accounts_created)
                     print("\t", '%.2f%% complete' % (accounts_created / num_accounts * 100.0))
 
-            yield {"operations" : ops, "wif_sigs" : [porter_wif]}
+            yield {"operations" : ops, "wif_sigs": [porter_wif]}
             
     if not silent:
         print("Accounts created:", accounts_created)
         print("\t100.00%% complete")
+
 
 def update_accounts(account_stats, conf, keydb, silent=True):
     system_account_names = set(get_system_account_names(conf))
@@ -339,22 +349,24 @@ def update_accounts(account_stats, conf, keydb, silent=True):
         print("Accounts updated:", accounts_updated)
         print("\t100.00%% complete")
 
+
 def port_snapshot(account_stats, conf, keydb, silent=True):
     porter = conf["accounts"]["porter"]["name"]
 
     yield {"operations" : [
-      {"type" : "transfer_operation",
-      "value" : {"from" : "initminer",
-       "to" : porter,
-       "amount" : conf["total_port_balance"],
-       "memo" : "Fund porting balances",
+      {"type": "transfer_operation",
+      "value": {"from" : "initminer",
+       "to": porter,
+       "amount": conf["total_port_balance"],
+       "memo": "Fund porting balances",
       }}],
-       "wif_sigs" : [keydb.get_privkey("initminer")]}
+       "wif_sigs": [keydb.get_privkey("initminer")]}
 
     yield from create_accounts(account_stats, conf, keydb, silent)
     yield from update_accounts(account_stats, conf, keydb, silent)
     
     return
+
 
 def build_actions(conf, silent=True):
     keydb = prockey.ProceduralKeyDatabase()
@@ -458,6 +470,7 @@ def build_actions(conf, silent=True):
     yield ["wait_blocks", {"count" : NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND}]
     return
 
+
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="txgen.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
@@ -479,6 +492,7 @@ def main(argv):
     outfile.flush()
     if args.outfile != "-":
         outfile.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)
