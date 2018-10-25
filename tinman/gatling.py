@@ -14,7 +14,8 @@ TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
   "Unable to acquire database lock",
   "Internal Error",
   "Server error",
-  "Upstream response error"
+  "Upstream response error",
+  "Request Timeout"
 ]
 
 MAX_RETRY = 30
