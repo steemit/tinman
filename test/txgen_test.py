@@ -6,6 +6,12 @@ from tinman import txgen
 
 FULL_CONF = {
     "transactions_per_block" : 40,
+    "steem_block_interval" : 3,
+    "num_blocks_to_clear_witness_round" : 21,
+    "transaction_witness_setup_pad" : 100,
+    "steem_max_authority_membership" : 10,
+    "steem_address_prefix" : "TST",
+    "steem_init_miner_name" : 'initminer',
     "snapshot_file" : "/tmp/test-snapshot.json",
     "backfill_file" : "/tmp/test-backfill.actions",
     "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
@@ -219,13 +225,14 @@ class TxgenTest(unittest.TestCase):
             cmd, args = action
             
             if cmd == "metadata":
-                self.assertEqual(args["txgen:semver"], "0.2")
-                self.assertEqual(args["txgen:transactions_per_block"], 40)
-                self.assertIsNotNone(args["epoch:created"])
-                self.assertEqual(args["actions:count"], 73)
-                self.assertGreater(args["recommend:miss_blocks"], 28631339)
-                self.assertEqual(args["snapshot:semver"], "0.2")
-                self.assertEqual(args["snapshot:origin_api"], "http://calculon.local")
+                if not args.get("post_backfill"):
+                    self.assertEqual(args["txgen:semver"], "0.2")
+                    self.assertEqual(args["txgen:transactions_per_block"], 40)
+                    self.assertIsNotNone(args["epoch:created"])
+                    self.assertEqual(args["actions:count"], 73)
+                    self.assertGreater(args["recommend:miss_blocks"], 28631339)
+                    self.assertEqual(args["snapshot:semver"], "0.2")
+                    self.assertEqual(args["snapshot:origin_api"], "http://calculon.local")
             elif cmd == "wait_blocks":
                 self.assertGreater(args["count"], 0)
             elif cmd == "submit_transaction":
