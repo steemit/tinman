@@ -469,6 +469,17 @@ def build_actions(conf, silent=True):
     yield ["wait_blocks", {"count" : conf.get("num_blocks_to_clear_witness_round", NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND)}]
     return
 
+def log_config(conf, file):
+    keys = ["transactions_per_block", "steem_block_interval",
+      "num_blocks_to_clear_witness_round", "transaction_witness_setup_pad",
+      "steem_max_authority_membership", "steem_address_prefix",
+      "steem_init_miner_name"]
+    
+    print("Using config:", file, file=sys.stderr)
+    
+    for key in keys:
+        print(key, "=", conf.get(key, "<DEFAULT>"), file=sys.stderr)
+    
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="txgen.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
@@ -477,7 +488,8 @@ def main(argv):
 
     with open(args.conffile, "r") as f:
         conf = json.load(f)
-
+        log_config(conf, args.conffile)
+    
     if args.outfile == "-":
         outfile = sys.stdout
     else:
