@@ -7,11 +7,9 @@ import json
 import sys
 import math
 
-MAINNET_PREFIX = "STM"
-TESTNET_PREFIX = "TST"
-PUB_KEY_LEN = 53
-MAINNET_DISABLED_WITNESS_KEY = "STM1111111111111111111111111111111114T1Anm"
-TESTNET_DISABLED_WITNESS_KEY = "TST1111111111111111111111111111111114T1Anm"
+from tinman.constants import  MAINNET_PREFIX, TESTNET_PREFIX, PUB_KEY_LEN, MAINNET_DISABLED_WITNESS_KEY,\
+    TESTNET_DISABLED_WITNESS_KEY
+
 
 def transform_prefix(object):
     if isinstance(object, list):
@@ -36,6 +34,7 @@ def transform_prefix(object):
             return TESTNET_DISABLED_WITNESS_KEY
         else:
             return object
+
 
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Substitute prefix")
@@ -74,6 +73,7 @@ def main(argv):
         input_file.close()
     if args.output_file != "-":
         output_file.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)

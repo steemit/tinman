@@ -9,15 +9,8 @@ from simple_steem_client.client import SteemRemoteBackend, SteemInterface, Steem
 from . import prockey
 from . import util
 
-# Whitelist of exceptions from transaction source (Mainnet).
-TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
-  "Unable to acquire database lock",
-  "Internal Error",
-  "Server error",
-  "Upstream response error"
-]
+from tinman.constants import MAX_RETRY, TRANSACTION_SOURCE_RETRYABLE_ERRORS
 
-MAX_RETRY = 30
 
 def str2bool(str_arg):
     """

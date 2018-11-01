@@ -21,15 +21,10 @@ except ImportError:
 from . import __version__
 from . import prockey
 from . import util
+from tinman.constants import SNAPSHOT_MAJOR_VERSION_SUPPORTED, SNAPSHOT_MINOR_VERSION_SUPPORTED, STEEM_GENESIS_TIMESTAMP, \
+    STEEM_BLOCK_INTERVAL, NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND, TRANSACTION_WITNESS_SETUP_PAD, \
+    STEEM_MAX_AUTHORITY_MEMBERSHIP, DENOM
 
-SNAPSHOT_MAJOR_VERSION_SUPPORTED = 0
-SNAPSHOT_MINOR_VERSION_SUPPORTED = 2
-STEEM_GENESIS_TIMESTAMP = 1451606400
-STEEM_BLOCK_INTERVAL = 3
-NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
-TRANSACTION_WITNESS_SETUP_PAD = 100
-STEEM_MAX_AUTHORITY_MEMBERSHIP = 10
-DENOM = 10**12        # we need stupidly high precision because VESTS
 
 def create_system_accounts(conf, keydb, name):
     desc = conf["accounts"][name]
@@ -52,6 +47,7 @@ def create_system_accounts(conf, keydb, name):
            "wif_sigs" : [keydb.get_privkey(desc["creator"])]}
 
     return
+
 
 def vote_accounts(conf, keydb, elector, elected):
     er_desc = conf["accounts"][elector]

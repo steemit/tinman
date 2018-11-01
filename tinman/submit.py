@@ -14,11 +14,9 @@ import subprocess
 import sys
 import time
 import traceback
-
 from . import util
+from tinman.constants import ACTIONS_MAJOR_VERSION_SUPPORTED, ACTIONS_MINOR_VERSION_SUPPORTED
 
-ACTIONS_MAJOR_VERSION_SUPPORTED = 0
-ACTIONS_MINOR_VERSION_SUPPORTED = 2
 
 class TransactionSigner(object):
     def __init__(self, sign_transaction_exe=None, chain_id=None):
@@ -36,6 +34,7 @@ class TransactionSigner(object):
         self.proc.stdin.flush()
         line = self.proc.stdout.readline().decode("utf-8")
         return json.loads(line)
+
 
 class CachedDgpo(object):
     def __init__(self, timefunc=time.time, refresh_interval=1.0, steemd=None):
@@ -110,6 +109,7 @@ def generate_blocks(steemd, args, cached_dgpo=None, now=None, produce_realtime=F
                edit_if_needed=False,
                )
     return
+
 
 def main(argv):
 

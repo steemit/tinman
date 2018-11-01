@@ -11,17 +11,8 @@ import sys
 from simple_steem_client.client import SteemRemoteBackend, SteemInterface, SteemRPCException
 
 from . import __version__
+from tinman.constants import DATABASE_API_SINGLE_QUERY_LIMIT, MAX_RETRY, TRANSACTION_SOURCE_RETRYABLE_ERRORS
 
-DATABASE_API_SINGLE_QUERY_LIMIT = 1000
-MAX_RETRY = 30
-
-# Whitelist of exceptions from transaction source (Mainnet).
-TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
-  "Unable to acquire database lock",
-  "Internal Error",
-  "Server error",
-  "Upstream response error"
-]
 
 def list_all_accounts(steemd):
     """ Generator function providing set of accounts existing in the Main Steem net """
