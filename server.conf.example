@@ -1,0 +1,10 @@
+{
+ "shared_secret": "xyz-",
+ "account_creator": "initminer",
+
+ "transaction_target": {
+  "node": "https://api.steemit.com",
+  "appbase": "True"
+ }
+
+}
