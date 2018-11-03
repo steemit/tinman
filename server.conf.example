@@ -1,0 +1,10 @@
+{
+ "shared_secret": "xyz-",
+ "account_creator": "porter",
+
+ "transaction_target": {
+  "node": "https://api.steemit.com",
+  "appbase": "True"
+ }
+
+}
