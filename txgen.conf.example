@@ -1,7 +1,14 @@
 {
  "transactions_per_block" : 40,
+ "steem_block_interval" : 3,
+ "num_blocks_to_clear_witness_round" : 21,
+ "transaction_witness_setup_pad" : 100,
+ "steem_max_authority_membership" : 10,
+ "steem_address_prefix" : "TST",
+ "steem_init_miner_name" : "initminer",
 
  "snapshot_file" : "snapshot.json",
+ "backfill_file" : "backfill.actions",
 
  "min_vesting_per_account" : {"amount" : "1", "precision" : 3, "nai" : "@@000000021"},
  "total_port_balance" : {"amount" : "200000000000", "precision" : 3, "nai" : "@@000000021"},

@@ -130,6 +130,9 @@ def action_to_str(action):
     This serializes actions, picking a string that does not occur in the JSON
     serialization to escape public/private key notes.
     """
+    if action and action[1] and  "esc" in action[1]:
+        return json.dumps(action, separators=(",", ":"), sort_keys=True)
+    
     json_empty_esc = json.dumps(action, separators=(",", ":"), default=prockey.PubkeySerializer(esc=""), sort_keys=True)
     esc = find_non_substr(json_empty_esc, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
     action[1]["esc"] = esc

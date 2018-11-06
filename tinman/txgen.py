@@ -6,6 +6,7 @@ import hashlib
 import itertools
 import json
 import os
+import os.path
 import random
 import sys
 
@@ -29,8 +30,12 @@ NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND = 21
 TRANSACTION_WITNESS_SETUP_PAD = 100
 STEEM_MAX_AUTHORITY_MEMBERSHIP = 10
 DENOM = 10**12        # we need stupidly high precision because VESTS
+STEEM_BLOCKS_PER_DAY = 28800
+STEEM_ADDRESS_PREFIX = "TST"
+STEEM_INIT_MINER_NAME = "initminer"
 
 def create_system_accounts(conf, keydb, name):
+    steem_init_miner_name = conf.get("steem_init_miner_name", STEEM_INIT_MINER_NAME)
     desc = conf["accounts"][name]
     for index in range(desc.get("count", 1)):
         name = desc["name"].format(index=index)
@@ -44,7 +49,7 @@ def create_system_accounts(conf, keydb, name):
             "memo_key" : keydb.get_pubkey(name, "memo"),
             "json_metadata" : "",
            }}, {"type" : "transfer_to_vesting_operation", "value" : {
-            "from" : "initminer",
+            "from" : steem_init_miner_name,
             "to" : name,
             "amount" : desc["vesting"],
            }}],
@@ -105,26 +110,28 @@ def build_setup_transactions(account_stats, conf, keydb, silent=True):
     yield from port_snapshot(account_stats, conf, keydb, silent)
 
 def build_initminer_tx(conf, keydb):
+    steem_init_miner_name = conf.get("steem_init_miner_name", STEEM_INIT_MINER_NAME)
+    
     return {"operations" : [
      {"type" : "account_update_operation",
       "value" : {
-       "account" : "initminer",
-       "owner" : keydb.get_authority("initminer", "owner"),
-       "active" : keydb.get_authority("initminer", "active"),
-       "posting" : keydb.get_authority("initminer", "posting"),
-       "memo_key" : keydb.get_pubkey("initminer", "memo"),
+       "account" : steem_init_miner_name,
+       "owner" : keydb.get_authority(steem_init_miner_name, "owner"),
+       "active" : keydb.get_authority(steem_init_miner_name, "active"),
+       "posting" : keydb.get_authority(steem_init_miner_name, "posting"),
+       "memo_key" : keydb.get_pubkey(steem_init_miner_name, "memo"),
        "json_metadata" : "",
       }},
      {"type" : "transfer_to_vesting_operation",
       "value" : {
-       "from" : "initminer",
-       "to" : "initminer",
-       "amount" : conf["accounts"]["initminer"]["vesting"],
+       "from" : steem_init_miner_name,
+       "to" : steem_init_miner_name,
+       "amount" : conf["accounts"][steem_init_miner_name]["vesting"],
       }},
      {"type" : "account_witness_vote_operation",
       "value" : {
-       "account" : "initminer",
-       "witness" : "initminer",
+       "account" : steem_init_miner_name,
+       "witness" : steem_init_miner_name,
        "approve" : True,
       }},
     ],
@@ -219,6 +226,7 @@ def get_proportions(account_stats, conf, silent=True):
     }
 
 def create_accounts(account_stats, conf, keydb, silent=True):
+    steem_address_prefix = conf.get("steem_address_prefix", STEEM_ADDRESS_PREFIX)
     system_account_names = set(get_system_account_names(conf))
     proportions = get_proportions(account_stats, conf, silent)
     min_vesting_per_account = proportions["min_vesting_per_account"]
@@ -248,7 +256,7 @@ def create_accounts(account_stats, conf, keydb, silent=True):
               "owner" : create_auth,
               "active" : create_auth,
               "posting" : create_auth,
-              "memo_key" : "TST"+a["memo_key"][3:],
+              "memo_key" : steem_address_prefix + a["memo_key"][3:],
               "json_metadata" : "",
              }}, {"type" : "transfer_to_vesting_operation", "value" : {
               "from" : porter,
@@ -276,6 +284,8 @@ def create_accounts(account_stats, conf, keydb, silent=True):
         print("\t100.00%% complete")
 
 def update_accounts(account_stats, conf, keydb, silent=True):
+    steem_max_authority_membership = conf.get("steem_max_authority_membership", STEEM_MAX_AUTHORITY_MEMBERSHIP)
+    steem_address_prefix = conf.get("steem_address_prefix", STEEM_ADDRESS_PREFIX)
     system_account_names = set(get_system_account_names(conf))
     account_names = account_stats["account_names"]
     num_accounts = len(account_names)
@@ -296,13 +306,13 @@ def update_accounts(account_stats, conf, keydb, silent=True):
             new_posting_auth = cur_posting_auth.copy()
             
             # filter to only include existing accounts
-            for aw in cur_owner_auth["account_auths"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]:
+            for aw in cur_owner_auth["account_auths"][:(steem_max_authority_membership - 1)]:
                 if (aw[0] not in account_names) or (aw[0] in system_account_names):
                     new_owner_auth["account_auths"].remove(aw)
-            for aw in cur_active_auth["account_auths"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]:
+            for aw in cur_active_auth["account_auths"][:(steem_max_authority_membership - 1)]:
                 if (aw[0] not in account_names) or (aw[0] in system_account_names):
                     new_active_auth["account_auths"].remove(aw)
-            for aw in cur_posting_auth["account_auths"][:(STEEM_MAX_AUTHORITY_MEMBERSHIP - 1)]:
+            for aw in cur_posting_auth["account_auths"][:(steem_max_authority_membership - 1)]:
                 if (aw[0] not in account_names) or (aw[0] in system_account_names):
                     new_posting_auth["account_auths"].remove(aw)
 
@@ -312,9 +322,9 @@ def update_accounts(account_stats, conf, keydb, silent=True):
             new_posting_auth["account_auths"].append([tnman, cur_posting_auth["weight_threshold"]])
             
             # substitute prefix for key_auths
-            new_owner_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_owner_auth["key_auths"]]
-            new_active_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_active_auth["key_auths"]]
-            new_posting_auth["key_auths"] = [["TST"+k[3:], w] for k, w in new_posting_auth["key_auths"]]
+            new_owner_auth["key_auths"] = [[steem_address_prefix + k[3:], w] for k, w in new_owner_auth["key_auths"][:steem_max_authority_membership]]
+            new_active_auth["key_auths"] = [[steem_address_prefix + k[3:], w] for k, w in new_active_auth["key_auths"][:steem_max_authority_membership]]
+            new_posting_auth["key_auths"] = [[steem_address_prefix + k[3:], w] for k, w in new_posting_auth["key_auths"][:steem_max_authority_membership]]
 
             ops = [{"type" : "account_update_operation", "value" : {
               "account" : a["name"],
@@ -338,16 +348,17 @@ def update_accounts(account_stats, conf, keydb, silent=True):
         print("\t100.00%% complete")
 
 def port_snapshot(account_stats, conf, keydb, silent=True):
+    steem_init_miner_name = conf.get("steem_init_miner_name", STEEM_INIT_MINER_NAME)
     porter = conf["accounts"]["porter"]["name"]
 
     yield {"operations" : [
       {"type" : "transfer_operation",
-      "value" : {"from" : "initminer",
+      "value" : {"from" : steem_init_miner_name,
        "to" : porter,
        "amount" : conf["total_port_balance"],
        "memo" : "Fund porting balances",
       }}],
-       "wif_sigs" : [keydb.get_privkey("initminer")]}
+       "wif_sigs" : [keydb.get_privkey(steem_init_miner_name)]}
 
     yield from create_accounts(account_stats, conf, keydb, silent)
     yield from update_accounts(account_stats, conf, keydb, silent)
@@ -362,6 +373,8 @@ def build_actions(conf, silent=True):
     account_names = account_stats["account_names"]
     num_accounts = len(account_names)
     transactions_per_block = conf["transactions_per_block"]
+    steem_block_interval = conf.get("steem_block_interval", STEEM_BLOCK_INTERVAL)
+    transaction_witness_setup_pad = conf.get("transaction_witness_setup_pad", TRANSACTION_WITNESS_SETUP_PAD)
     
     genesis_time = datetime.datetime.utcfromtimestamp(STEEM_GENESIS_TIMESTAMP)
     
@@ -377,12 +390,16 @@ def build_actions(conf, silent=True):
     
     # Pad for update witnesses, vote witnesses, clear rounds, and transaction
     # setup processing time
-    predicted_block_count += TRANSACTION_WITNESS_SETUP_PAD + (predicted_transaction_setup_seconds // STEEM_BLOCK_INTERVAL)
+    predicted_block_count += transaction_witness_setup_pad + (predicted_transaction_setup_seconds // steem_block_interval)
     
     now = datetime.datetime.utcnow()
-    start_time = now - datetime.timedelta(seconds=predicted_block_count * STEEM_BLOCK_INTERVAL)
-    miss_blocks = int((start_time - genesis_time).total_seconds()) // STEEM_BLOCK_INTERVAL
+    start_time = now - datetime.timedelta(seconds=predicted_block_count * steem_block_interval)
+    miss_blocks = int((start_time - genesis_time).total_seconds()) // steem_block_interval
     miss_blocks = max(miss_blocks-1, 0)
+    origin_api = None
+    snapshot_head_block_num = None
+    snapshot_semver = None
+    has_backfill = False
     
     metadata = {
       "txgen:semver": __version__,
@@ -408,6 +425,7 @@ def build_actions(conf, silent=True):
     major_version, minor_version = semver.split('.')
     major_version = int(major_version)
     minor_version = int(minor_version)
+    backfill_file = conf.get("backfill_file", None)
     
     if major_version == SNAPSHOT_MAJOR_VERSION_SUPPORTED:
         if not silent:
@@ -418,22 +436,50 @@ def build_actions(conf, silent=True):
     if minor_version < SNAPSHOT_MINOR_VERSION_SUPPORTED:
         print("WARNING: Older snapshot encountered.", file=sys.stderr)
     
+    if backfill_file and os.path.exists(backfill_file) and os.path.isfile(backfill_file):
+        with open(backfill_file, "r") as f:
+            num_lines = sum(1 for line in f)
+        
+        if num_lines > 0:
+            metadata["backfill_actions:count"] = num_lines
+            metadata["actions:count"] += num_lines
+            miss_blocks -= max(num_lines // transactions_per_block, STEEM_BLOCKS_PER_DAY * 30)
+            metadata["recommend:miss_blocks"] = miss_blocks
+            has_backfill = True
+    
     yield ["metadata", metadata]
     yield ["wait_blocks", {"count" : 1, "miss_blocks" : miss_blocks}]
     yield ["submit_transaction", {"tx" : build_initminer_tx(conf, keydb)}]
     for b in util.batch(build_setup_transactions(account_stats, conf, keydb, silent), transactions_per_block):
-        yield ["wait_blocks", {"count" : 1}]
         for tx in b:
             yield ["submit_transaction", {"tx" : tx}]
-
+    
+    if has_backfill:
+        with open(backfill_file, "r") as f:
+            for line in f:
+                yield json.loads(line)
+        
+        yield ["metadata", {"post_backfill" : True}]
+    
     for tx in update_witnesses(conf, keydb, "init"):
         yield ["submit_transaction", {"tx" : tx}]
     for tx in vote_accounts(conf, keydb, "elector", "init"):
         yield ["submit_transaction", {"tx" : tx}]
 
-    yield ["wait_blocks", {"count" : NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND}]
+    yield ["wait_blocks", {"count" : conf.get("num_blocks_to_clear_witness_round", NUM_BLOCKS_TO_CLEAR_WITNESS_ROUND)}]
     return
 
+def log_config(conf, file):
+    keys = ["transactions_per_block", "steem_block_interval",
+      "num_blocks_to_clear_witness_round", "transaction_witness_setup_pad",
+      "steem_max_authority_membership", "steem_address_prefix",
+      "steem_init_miner_name"]
+    
+    print("Using config:", file, file=sys.stderr)
+    
+    for key in keys:
+        print(key, "=", conf.get(key, "<DEFAULT>"), file=sys.stderr)
+    
 def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], description="Generate transactions for Steem testnet")
     parser.add_argument("-c", "--conffile", default="txgen.conf", dest="conffile", metavar="FILE", help="Specify configuration file")
@@ -442,7 +488,8 @@ def main(argv):
 
     with open(args.conffile, "r") as f:
         conf = json.load(f)
-
+        log_config(conf, args.conffile)
+    
     if args.outfile == "-":
         outfile = sys.stdout
     else:

@@ -69,3 +69,8 @@ class UtilTest(unittest.TestCase):
         action = ["metadata", {}]
         result = util.action_to_str(action)
         self.assertEqual(result, '["metadata",{"esc":"b"}]')
+
+    def test_action_to_str_with_esc(self):
+        action = ["metadata", {"esc": "C"}]
+        result = util.action_to_str(action)
+        self.assertEqual(result, '["metadata",{"esc":"C"}]')

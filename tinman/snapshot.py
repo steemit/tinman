@@ -13,6 +13,7 @@ from simple_steem_client.client import SteemRemoteBackend, SteemInterface, Steem
 from . import __version__
 
 DATABASE_API_SINGLE_QUERY_LIMIT = 1000
+MAX_RETRY = 30
 
 # Whitelist of exceptions from transaction source (Mainnet).
 TRANSACTION_SOURCE_RETRYABLE_ERRORS = [
