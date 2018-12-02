@@ -1,0 +1,15 @@
+{
+   "metadata":{
+      "snapshot:semver":"0.2",
+      "snapshot:origin_api":"http://calculon.local"
+   },
+   "dynamic_global_properties":{
+      "total_vesting_fund_steem":{
+         "amount":"196793227573",
+         "nai":"@@000000021",
+         "precision":3
+      }
+   },
+   "accounts":[],
+   "witnesses":[]
+}
