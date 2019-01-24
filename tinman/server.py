@@ -142,7 +142,7 @@ def main(argv):
      
         return render_template('account_create.html', form=form)
     
-    app.run()
+    app.run(host='0.0.0.0')
 
 if __name__ == "__main__":
     main(sys.argv)
