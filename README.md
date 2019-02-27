@@ -107,7 +107,7 @@ tinman keysub --get-dev-key /path/to/steem/programs/util/get_dev_key | \
 tinman submit --realtime -t http://127.0.0.1:9990 \
   --signer /path/to/steem/programs/util/sign_transaction \
   -f fail.json \
-  -t 600
+  --timeout 600
 ```
 
 After allowing this script to run, you have now bootstrapped your testnet and you can point your witnesses at this node to start seeding and signing blocks.
