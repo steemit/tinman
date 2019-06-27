@@ -47,7 +47,7 @@ FULL_CONF = {
             "STEEM_TEMP_ACCOUNT" : {"name" : "temp"}
         }
     }
-
+    
 class TxgenTest(unittest.TestCase):
 
     def test_create_system_accounts_bad_args(self):
@@ -262,24 +262,3 @@ class TxgenTest(unittest.TestCase):
                 cmd, args = action
         
         self.assertIn('Unsupported snapshot', str(ctx.exception))
-
-    def test_build_actions_no_main_accounts_snapshot(self):
-        system_account_names = ["init-0", "init-1", "init-2", "init-3", "init-4",
-            "init-5", "init-6", "init-7", "init-8", "init-9", "init-10", "init-11",
-            "init-12", "init-13", "init-14", "init-15", "init-16", "init-17",
-            "init-18", "init-19", "init-20", "elect-0", "elect-1", "elect-2",
-            "elect-3", "elect-4", "elect-5", "elect-6", "elect-7", "elect-8",
-            "elect-9", "tnman", "porter"]
-        
-        shutil.copyfile("test-no-main-accounts-snapshot.json", "/tmp/test-no-main-accounts-snapshot.json")
-        conf = FULL_CONF.copy()
-        conf["snapshot_file"] = "/tmp/test-no-main-accounts-snapshot.json"
-        
-        for action in txgen.build_actions(conf):
-            cmd, args = action
-            
-            if cmd == "submit_transaction":
-                for type, value in args["tx"]["operations"]:
-                    if type == 'account_create_operation':
-                        new_account_name = value['new_account_name']
-                        self.assertIn(new_account_name, system_account_names)

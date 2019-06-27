@@ -206,16 +206,8 @@ def get_proportions(account_stats, conf, silent=True):
         raise RuntimeError("Increase total_port_balance or decrease min_vesting_per_account")
     total_port_vesting = (avail_port_balance * total_vesting_steem) // (total_steem + total_vesting_steem)
     total_port_liquid = (avail_port_balance * total_steem) // (total_steem + total_vesting_steem)
-    
-    if total_vests == 0:
-        vest_conversion_factor = 1
-    else:
-        vest_conversion_factor  = (DENOM * total_port_vesting) // total_vests
-        
-    if total_steem == 0:
-        steem_conversion_factor = 1
-    else:
-        steem_conversion_factor = (DENOM * total_port_liquid ) // total_steem
+    vest_conversion_factor  = (DENOM * total_port_vesting) // total_vests
+    steem_conversion_factor = (DENOM * total_port_liquid ) // total_steem
     
     if not silent:
         print("total_vests:", total_vests)

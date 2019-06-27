@@ -25,7 +25,7 @@ build
 .DS_Store
 *.swp
 *.swo
-/*.json
+*.json
 *.conf
 
 # Packages
@@ -56,3 +56,5 @@ build
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+
