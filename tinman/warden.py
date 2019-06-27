@@ -47,6 +47,15 @@ def main(argv):
     
     witness_schedule = steemd.database_api.get_witness_schedule(x=None)
     witnesses = witness_schedule["current_shuffled_witnesses"]
+    initminer = config["STEEM_INIT_MINER_NAME"]
+    
+    if initminer not in witnesses:
+        print("[√] witnesses: %s not present" % initminer)
+        passfail.append(PREFLIGHT_GO)
+    else:
+        print("[X] witnesses: %s present" % initminer)
+        passfail.append(PREFLIGHT_NOGO)
+    
     scheduled_witnesses = witness_schedule["num_scheduled_witnesses"]
     
     if scheduled_witnesses == config["STEEM_MAX_WITNESSES"]:
